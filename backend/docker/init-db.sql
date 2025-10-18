@@ -63,9 +63,9 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 
 -- Insert sample data for development
--- Sample user (password: password123)
+-- Sample user (password: SecurePassword123!)
 INSERT INTO users (id, email, name, phone_number, password_hash) VALUES
-('11111111-1111-1111-1111-111111111111', 'demo@bankapp.com', 'Demo User', '+1234567890', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi')
+('11111111-1111-1111-1111-111111111111', 'demo@bankapp.com', 'Demo User', '+1234567890', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi')
 ON CONFLICT (email) DO NOTHING;
 
 -- Sample accounts
