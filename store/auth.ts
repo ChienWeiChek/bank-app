@@ -50,7 +50,6 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           isAuthenticated: false,
-          biometricEnabled: false,
         }),
 
       setBiometricEnabled: (biometricEnabled: boolean) =>

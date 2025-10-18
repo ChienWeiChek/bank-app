@@ -1,6 +1,6 @@
-import { useAuthStore } from '@/store/auth';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useAuthStore } from "@/store/auth";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -11,17 +11,24 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState('demo@bank.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState("demo@bank.com");
+  const [password, setPassword] = useState("password");
   const router = useRouter();
-  const { loading, error, loginStart, loginSuccess, loginFailure } = useAuthStore();
+  const {
+    loading,
+    error,
+    loginStart,
+    loginSuccess,
+    loginFailure,
+    biometricEnabled,
+  } = useAuthStore();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      Alert.alert("Error", "Please enter both email and password");
       return;
     }
 
@@ -29,29 +36,30 @@ const LoginScreen = () => {
 
     // Simulate API call
     setTimeout(() => {
-      if (email === 'demo@bank.com' && password === 'password') {
+      if (email === "demo@bank.com" && password === "password") {
         loginSuccess({
-          id: '1',
-          email: 'demo@bank.com',
-          name: 'John Doe',
-          phoneNumber: '+1234567890',
+          id: "1",
+          email: "demo@bank.com",
+          name: "John Doe",
+          phoneNumber: "+1234567890",
         });
-        // Redirect to tabs view after successful login
-        router.replace('/(tabs)');
+        // Redirect to biometric setup screen after successful login
+        if (biometricEnabled) router.replace("/(tabs)");
+        else router.replace("/(auth)/biometric-setup");
       } else {
-        loginFailure('Invalid email or password');
+        loginFailure("Invalid email or password");
       }
     }, 1500);
   };
 
   const navigateToRegister = () => {
-    router.push('/(auth)/register');
+    router.push("/(auth)/register");
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
@@ -97,7 +105,7 @@ const LoginScreen = () => {
             disabled={loading}
           >
             <Text style={styles.loginButtonText}>
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? "Signing In..." : "Sign In"}
             </Text>
           </TouchableOpacity>
 
@@ -106,7 +114,9 @@ const LoginScreen = () => {
           </TouchableOpacity>
 
           <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Don&apos;t have an account? </Text>
+            <Text style={styles.registerText}>
+              Don&apos;t have an account?{" "}
+            </Text>
             <TouchableOpacity onPress={navigateToRegister}>
               <Text style={styles.registerLink}>Sign Up</Text>
             </TouchableOpacity>
@@ -126,41 +136,41 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 40,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0100e7',
+    fontWeight: "bold",
+    color: "#0100e7",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
   },
   form: {
-    width: '100%',
+    width: "100%",
   },
   errorContainer: {
-    backgroundColor: '#ffebee',
+    backgroundColor: "#ffebee",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#f44336',
+    borderLeftColor: "#f44336",
   },
   errorText: {
-    color: '#d32f2f',
+    color: "#d32f2f",
     fontSize: 14,
   },
   inputContainer: {
@@ -168,66 +178,66 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
+    fontWeight: "600",
+    color: "#333333",
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
-    color: '#333333',
+    color: "#333333",
   },
   loginButton: {
-    backgroundColor: '#0100e7',
+    backgroundColor: "#0100e7",
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
   loginButtonDisabled: {
-    backgroundColor: '#b3b3b3',
+    backgroundColor: "#b3b3b3",
   },
   loginButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   forgotPassword: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 16,
   },
   forgotPasswordText: {
-    color: '#0100e7',
+    color: "#0100e7",
     fontSize: 16,
   },
   registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 24,
   },
   registerText: {
-    color: '#666666',
+    color: "#666666",
     fontSize: 16,
   },
   registerLink: {
-    color: '#0100e7',
+    color: "#0100e7",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   demoContainer: {
     marginTop: 40,
     padding: 16,
-    backgroundColor: '#f0f8ff',
+    backgroundColor: "#f0f8ff",
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#0100e7',
+    borderLeftColor: "#0100e7",
   },
   demoText: {
-    color: '#666666',
+    color: "#666666",
     fontSize: 14,
     marginBottom: 4,
   },

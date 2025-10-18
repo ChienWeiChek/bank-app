@@ -1,19 +1,28 @@
 import { useAuthStore } from "@/store/auth";
+import { BiometricAuth } from "@/utils/biometricAuth";
 import { Stack } from "expo-router";
 import * as React from "react";
 
 export default function RootLayout() {
-  const { isAuthenticated, biometricEnabled } =
-    useAuthStore();
+  const { isAuthenticated, biometricEnabled, setBiometricEnabled } = useAuthStore();
 
-    // biometricEnabled: state.biometricEnabled ?? false,
-  console.log("🚀 ~ RootLayout ~ isAuthenticated:", isAuthenticated);
-  console.log("🚀 ~ RootLayout ~ biometricEnabled:", biometricEnabled);
+  React.useEffect(() => {
+    const getBiometricPreference = async () => {
+      setBiometricEnabled(await BiometricAuth.getBiometricPreference());
+    };
+    getBiometricPreference();
+  }, []);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
-        <Stack.Screen name="(tabs)" />
+        // If biometric is already enabled, go directly to tabs
+        // Otherwise, the biometric setup screen will handle the navigation
+        biometricEnabled ? (
+          <Stack.Screen name="(tabs)" />
+        ) : (
+          <Stack.Screen name="(auth)" />
+        )
       ) : (
         <Stack.Screen name="(auth)" />
       )}
