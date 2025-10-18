@@ -1,6 +1,9 @@
 import { Context } from "oak";
 
-export async function errorMiddleware(ctx: Context, next: () => Promise<unknown>) {
+export async function errorMiddleware(
+  ctx: Context,
+  next: () => Promise<unknown>
+) {
   try {
     await next();
   } catch (err) {
@@ -11,11 +14,16 @@ export async function errorMiddleware(ctx: Context, next: () => Promise<unknown>
     let message = "Internal Server Error";
     let code = "INTERNAL_ERROR";
 
-    // Handle different error types
-    if (err instanceof Error) {
+    // ---- HANDLE OUR CUSTOM APP ERRORS FIRST ----
+    if (err instanceof AppError) {
+      status = err.status;
+      code = err.code;
+      message = err.message;
+    }
+    // ---- Handle database-related messages next ----
+    else if (err instanceof Error) {
       message = err.message;
 
-      // Database errors
       if (err.message.includes("duplicate key")) {
         status = 409;
         code = "DUPLICATE_ENTRY";
@@ -31,7 +39,7 @@ export async function errorMiddleware(ctx: Context, next: () => Promise<unknown>
       }
     }
 
-    // JWT errors
+    // ---- JWT-specific errors ----
     if (err.name === "JsonWebTokenError") {
       status = 401;
       code = "INVALID_TOKEN";
@@ -47,7 +55,7 @@ export async function errorMiddleware(ctx: Context, next: () => Promise<unknown>
       error: {
         code,
         message,
-        ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
+        ...(Deno.env.get("NODE_ENV") === "development" && { stack: err.stack }),
       },
     };
   }
@@ -68,22 +76,54 @@ export class AppError extends Error {
 // Common error types
 export const Errors = {
   // Authentication errors
-  INVALID_CREDENTIALS: new AppError("INVALID_CREDENTIALS", "Invalid email or password", 401),
+  INVALID_CREDENTIALS: new AppError(
+    "INVALID_CREDENTIALS",
+    "Invalid email or password",
+    401
+  ),
   UNAUTHORIZED: new AppError("UNAUTHORIZED", "Authentication required", 401),
   FORBIDDEN: new AppError("FORBIDDEN", "Access denied", 403),
 
   // Account errors
-  ACCOUNT_NOT_FOUND: new AppError("ACCOUNT_NOT_FOUND", "Account not found", 404),
-  INSUFFICIENT_FUNDS: new AppError("INSUFFICIENT_FUNDS", "Insufficient funds", 400),
-  INVALID_ACCOUNT_TYPE: new AppError("INVALID_ACCOUNT_TYPE", "Invalid account type", 400),
+  ACCOUNT_NOT_FOUND: new AppError(
+    "ACCOUNT_NOT_FOUND",
+    "Account not found",
+    404
+  ),
+  INSUFFICIENT_FUNDS: new AppError(
+    "INSUFFICIENT_FUNDS",
+    "Insufficient funds",
+    400
+  ),
+  INVALID_ACCOUNT_TYPE: new AppError(
+    "INVALID_ACCOUNT_TYPE",
+    "Invalid account type",
+    400
+  ),
 
   // Transaction errors
-  TRANSACTION_FAILED: new AppError("TRANSACTION_FAILED", "Transaction failed", 400),
-  INVALID_AMOUNT: new AppError("INVALID_AMOUNT", "Invalid transaction amount", 400),
+  TRANSACTION_FAILED: new AppError(
+    "TRANSACTION_FAILED",
+    "Transaction failed",
+    400
+  ),
+  INVALID_AMOUNT: new AppError(
+    "INVALID_AMOUNT",
+    "Invalid transaction amount",
+    400
+  ),
 
   // Contact errors
-  CONTACT_NOT_FOUND: new AppError("CONTACT_NOT_FOUND", "Contact not found", 404),
-  DUPLICATE_CONTACT: new AppError("DUPLICATE_CONTACT", "Contact already exists", 409),
+  CONTACT_NOT_FOUND: new AppError(
+    "CONTACT_NOT_FOUND",
+    "Contact not found",
+    404
+  ),
+  DUPLICATE_CONTACT: new AppError(
+    "DUPLICATE_CONTACT",
+    "Contact already exists",
+    409
+  ),
 
   // Validation errors
   VALIDATION_ERROR: new AppError("VALIDATION_ERROR", "Validation failed", 400),
