@@ -1,6 +1,10 @@
 import { Router } from "oak";
 import { z } from "zod";
 import { query } from "../config/database.ts";
+import {
+  AuthenticatedContext,
+  requireAuth,
+} from "../middleware/auth.middleware.ts";
 import { AppError, Errors } from "../middleware/error.middleware.ts";
 import {
   AuthResponse,
@@ -11,8 +15,7 @@ import {
 import {
   createJWT,
   createRefreshToken,
-  verifyJWT,
-  verifyRefreshToken,
+  verifyRefreshToken
 } from "../utils/jwt.ts";
 import {
   hashPassword,
@@ -176,7 +179,6 @@ authRouter.post("/api/auth/refresh", async (ctx) => {
 
   try {
     body = await ctx.request.body().value;
-    console.log("🚀 ~ body:", body);
 
     refreshSchema.parse(body);
   } catch (error) {
@@ -204,113 +206,100 @@ authRouter.post("/api/auth/refresh", async (ctx) => {
 });
 
 // Get current user endpoint
-authRouter.get("/api/auth/me", async (ctx) => {
-  const authHeader = ctx.request.headers.get("Authorization");
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw Errors.UNAUTHORIZED;
-  }
-
-  const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-  try {
-    // Verify the access token
-    const payload = await verifyJWT(token);
-
-    // Get user from database
-    const result = await query(
-      `SELECT id, email, name, phone_number as "phoneNumber", 
+authRouter.get(
+  "/api/auth/me",
+  requireAuth(async (ctx: AuthenticatedContext) => {
+    const userId = ctx.state.user.userId;
+    try {
+      // Get user from database
+      const result = await query(
+        `SELECT id, email, name, phone_number as "phoneNumber", 
               biometric_enabled as "biometricEnabled", 
               created_at as "createdAt", updated_at as "updatedAt"
-       FROM users WHERE id = '${payload.userId}'`
-    );
+       FROM users WHERE id = '${userId}'`
+      );
 
-    if (result.rows.length === 0) {
+      if (result.rows.length === 0) {
+        throw Errors.UNAUTHORIZED;
+      }
+
+      const user = result.rows[0];
+
+      ctx.response.body = {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phoneNumber: user.phoneNumber,
+          biometricEnabled: user.biometricEnabled,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      };
+    } catch (error) {
       throw Errors.UNAUTHORIZED;
     }
-
-    const user = result.rows[0];
-
-    ctx.response.body = {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phoneNumber: user.phoneNumber,
-        biometricEnabled: user.biometricEnabled,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-    };
-  } catch (error) {
-    throw Errors.UNAUTHORIZED;
-  }
-});
+  })
+);
 
 // Update biometric enabled endpoint
-authRouter.patch("/api/auth/biometric", async (ctx) => {
-  const authHeader = ctx.request.headers.get("Authorization");
+authRouter.patch(
+  "/api/auth/biometric",
+  requireAuth(async (ctx: AuthenticatedContext) => {
+    const userId = ctx.state.user.userId;
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw Errors.UNAUTHORIZED;
-  }
+    let body: { biometricEnabled: boolean };
 
-  const token = authHeader.substring(7); // Remove "Bearer " prefix
+    try {
+      body = await ctx.request.body().value;
 
-  let body: { biometricEnabled: boolean };
-
-  try {
-    body = await ctx.request.body().value;
-
-    // Validate request body
-    if (typeof body.biometricEnabled !== "boolean") {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        "biometricEnabled must be a boolean"
-      );
+      // Validate request body
+      if (typeof body.biometricEnabled !== "boolean") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "biometricEnabled must be a boolean"
+        );
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new AppError("VALIDATION_ERROR", error.errors[0].message);
+      }
+      throw Errors.VALIDATION_ERROR;
     }
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      throw new AppError("VALIDATION_ERROR", error.errors[0].message);
-    }
-    throw Errors.VALIDATION_ERROR;
-  }
 
-  try {
-    // Verify the access token
-    const payload = await verifyJWT(token);
-
-    // Update user biometric setting
-    const result = await query(
-      `UPDATE users 
+    try {
+      // Update user biometric setting
+      const result = await query(
+        `UPDATE users 
        SET biometric_enabled = '${body.biometricEnabled}', updated_at = CURRENT_TIMESTAMP
-       WHERE id = '${payload.userId}'
+       WHERE id = '${userId}'
        RETURNING id, email, name, phone_number as "phoneNumber", 
                  biometric_enabled as "biometricEnabled", 
                  created_at as "createdAt", updated_at as "updatedAt"`
-    );
+      );
 
-    if (result.rows.length === 0) {
+      if (result.rows.length === 0) {
+        throw Errors.UNAUTHORIZED;
+      }
+
+      const user = result.rows[0];
+
+      ctx.response.body = {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          phoneNumber: user.phoneNumber,
+          biometricEnabled: user.biometricEnabled,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      };
+    } catch (error) {
       throw Errors.UNAUTHORIZED;
     }
-
-    const user = result.rows[0];
-
-    ctx.response.body = {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phoneNumber: user.phoneNumber,
-        biometricEnabled: user.biometricEnabled,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-    };
-  } catch (error) {
-    throw Errors.UNAUTHORIZED;
-  }
-});
+  })
+);
 
 // Logout endpoint (client-side token invalidation)
 authRouter.post("/api/auth/logout", async (ctx) => {

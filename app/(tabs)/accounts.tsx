@@ -1,17 +1,34 @@
 import { useAccountsStore } from '@/store/account';
 import { Account } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
 const AccountsScreen = () => {
-  const { accounts, selectedAccount, setSelectedAccount } = useAccountsStore();
+  const { 
+    accounts, 
+    selectedAccount, 
+    setSelectedAccount, 
+    fetchAccounts, 
+    loading, 
+    error 
+  } = useAccountsStore();
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  const handleRefresh = () => {
+    fetchAccounts();
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -52,8 +69,42 @@ const AccountsScreen = () => {
 
   const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
 
+  // Loading state
+  if (loading && accounts.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0100e7" />
+        <Text style={styles.loadingText}>Loading accounts...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error && accounts.length === 0) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="warning-outline" size={48} color="#dc3545" />
+        <Text style={styles.errorTitle}>Unable to load accounts</Text>
+        <Text style={styles.errorMessage}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchAccounts}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={loading && accounts.length > 0}
+          onRefresh={handleRefresh}
+          colors={['#0100e7']}
+        />
+      }
+    >
       {/* Total Balance */}
       <View style={styles.totalBalanceCard}>
         <Text style={styles.totalBalanceLabel}>Total Balance</Text>
@@ -67,95 +118,107 @@ const AccountsScreen = () => {
       {/* Accounts List */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>My Accounts</Text>
-        <View style={styles.accountsList}>
-          {accounts.map((account: Account) => {
-            const icon = getAccountIcon(account.type);
-            const isSelected = selectedAccount?.id === account.id;
-            
-            return (
-              <TouchableOpacity
-                key={account.id}
-                style={[
-                  styles.accountCard,
-                  isSelected && styles.accountCardSelected,
-                ]}
-                onPress={() => handleAccountSelect(account)}
-              >
-                <View style={styles.accountHeader}>
-                  <View style={styles.accountIcon}>
-                    <Ionicons name={icon.name as any} size={24} color={icon.color} />
+        {accounts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="wallet-outline" size={48} color="#6c757d" />
+            <Text style={styles.emptyStateTitle}>No accounts found</Text>
+            <Text style={styles.emptyStateMessage}>
+              You don&apos;t have any accounts yet. Add your first account to get started.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.accountsList}>
+            {accounts.map((account: Account) => {
+              const icon = getAccountIcon(account.type);
+              const isSelected = selectedAccount?.id === account.id;
+              
+              return (
+                <TouchableOpacity
+                  key={account.id}
+                  style={[
+                    styles.accountCard,
+                    isSelected && styles.accountCardSelected,
+                  ]}
+                  onPress={() => handleAccountSelect(account)}
+                >
+                  <View style={styles.accountHeader}>
+                    <View style={styles.accountIcon}>
+                      <Ionicons name={icon.name as any} size={24} color={icon.color} />
+                    </View>
+                    <View style={styles.accountInfo}>
+                      <Text style={styles.accountName}>{account.name}</Text>
+                      <Text style={styles.accountType}>
+                        {getAccountTypeLabel(account.type)}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark-circle" size={20} color="#0100e7" />
+                      </View>
+                    )}
                   </View>
-                  <View style={styles.accountInfo}>
-                    <Text style={styles.accountName}>{account.name}</Text>
-                    <Text style={styles.accountType}>
-                      {getAccountTypeLabel(account.type)}
+                  
+                  <View style={styles.accountDetails}>
+                    <View style={styles.accountNumberContainer}>
+                      <Text style={styles.accountNumberLabel}>Account Number</Text>
+                      <Text style={styles.accountNumber}>{account.number}</Text>
+                    </View>
+                    <Text style={styles.accountBalance}>
+                      {formatCurrency(account.balance)}
                     </Text>
                   </View>
-                  {isSelected && (
-                    <View style={styles.selectedIndicator}>
-                      <Ionicons name="checkmark-circle" size={20} color="#0100e7" />
-                    </View>
-                  )}
-                </View>
-                
-                <View style={styles.accountDetails}>
-                  <View style={styles.accountNumberContainer}>
-                    <Text style={styles.accountNumberLabel}>Account Number</Text>
-                    <Text style={styles.accountNumber}>{account.number}</Text>
+
+                  {/* Quick Actions */}
+                  <View style={styles.accountActions}>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <Ionicons name="arrow-up" size={16} color="#0100e7" />
+                      <Text style={styles.actionText}>Transfer</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <Ionicons name="arrow-down" size={16} color="#28a745" />
+                      <Text style={styles.actionText}>Deposit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton}>
+                      <Ionicons name="document-text" size={16} color="#6c757d" />
+                      <Text style={styles.actionText}>Details</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.accountBalance}>
-                    {formatCurrency(account.balance)}
-                  </Text>
-                </View>
-
-                {/* Quick Actions */}
-                <View style={styles.accountActions}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="arrow-up" size={16} color="#0100e7" />
-                    <Text style={styles.actionText}>Transfer</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="arrow-down" size={16} color="#28a745" />
-                    <Text style={styles.actionText}>Deposit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Ionicons name="document-text" size={16} color="#6c757d" />
-                    <Text style={styles.actionText}>Details</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </View>
 
-      {/* Account Summary */}
-      <View style={styles.summarySection}>
-        <Text style={styles.sectionTitle}>Account Summary</Text>
-        <View style={styles.summaryCards}>
-          <View style={styles.summaryCard}>
-            <Ionicons name="wallet-outline" size={24} color="#0100e7" />
-            <Text style={styles.summaryAmount}>
-              {formatCurrency(accounts.find((acc: Account) => acc.type === 'checking')?.balance || 0)}
-            </Text>
-            <Text style={styles.summaryLabel}>Checking</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Ionicons name="cash-outline" size={24} color="#28a745" />
-            <Text style={styles.summaryAmount}>
-              {formatCurrency(accounts.find((acc: Account) => acc.type === 'savings')?.balance || 0)}
-            </Text>
-            <Text style={styles.summaryLabel}>Savings</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Ionicons name="card-outline" size={24} color="#dc3545" />
-            <Text style={styles.summaryAmount}>
-              {formatCurrency(accounts.find((acc: Account) => acc.type === 'credit')?.balance || 0)}
-            </Text>
-            <Text style={styles.summaryLabel}>Credit</Text>
+      {/* Account Summary - Only show if we have accounts */}
+      {accounts.length > 0 && (
+        <View style={styles.summarySection}>
+          <Text style={styles.sectionTitle}>Account Summary</Text>
+          <View style={styles.summaryCards}>
+            <View style={styles.summaryCard}>
+              <Ionicons name="wallet-outline" size={24} color="#0100e7" />
+              <Text style={styles.summaryAmount}>
+                {formatCurrency(accounts.find((acc: Account) => acc.type === 'checking')?.balance || 0)}
+              </Text>
+              <Text style={styles.summaryLabel}>Checking</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Ionicons name="cash-outline" size={24} color="#28a745" />
+              <Text style={styles.summaryAmount}>
+                {formatCurrency(accounts.find((acc: Account) => acc.type === 'savings')?.balance || 0)}
+              </Text>
+              <Text style={styles.summaryLabel}>Savings</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Ionicons name="card-outline" size={24} color="#dc3545" />
+              <Text style={styles.summaryAmount}>
+                {formatCurrency(accounts.find((acc: Account) => acc.type === 'credit')?.balance || 0)}
+              </Text>
+              <Text style={styles.summaryLabel}>Credit</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Add Account Button */}
       <TouchableOpacity style={styles.addAccountButton}>
@@ -171,6 +234,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 32,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#0100e7',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateMessage: {
+    fontSize: 14,
+    color: '#666666',
+    textAlign: 'center',
   },
   totalBalanceCard: {
     backgroundColor: '#0100e7',

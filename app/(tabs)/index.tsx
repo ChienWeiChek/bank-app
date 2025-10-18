@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,13 @@ import {
 
 const DashboardScreen = () => {
   const { user } = useAuthStore();
-  const { accounts, selectedAccount, setSelectedAccount } = useAccountsStore();
+  const {
+    accounts,
+    selectedAccount,
+    setSelectedAccount,
+    loading,
+    fetchAccounts,
+  } = useAccountsStore();
   const { transactions } = useTransactionsStore();
 
   const totalBalance = accounts.reduce(
@@ -71,8 +78,21 @@ const DashboardScreen = () => {
     });
   };
 
+  const handleRefresh = () => {
+    fetchAccounts();
+  };
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={loading && accounts.length > 0}
+          onRefresh={handleRefresh}
+          colors={["#0100e7"]}
+        />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -95,10 +115,10 @@ const DashboardScreen = () => {
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Total Balance</Text>
         <Text style={styles.balanceAmount}>{formatCurrency(totalBalance)}</Text>
-        <View style={styles.balanceTrend}>
+        {/* <View style={styles.balanceTrend}>
           <Ionicons name="trending-up" size={16} color="#28a745" />
           <Text style={styles.trendText}>+2.5% from last month</Text>
-        </View>
+        </View> */}
       </View>
 
       {/* Quick Actions */}

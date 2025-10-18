@@ -1,90 +1,103 @@
 import { Router } from "oak";
-import { requireAuth, AuthenticatedContext } from "../middleware/auth.middleware.ts";
 import { query } from "../config/database.ts";
+import {
+  AuthenticatedContext,
+  requireAuth,
+} from "../middleware/auth.middleware.ts";
 import { Errors } from "../middleware/error.middleware.ts";
 import { AccountResponse, BalanceResponse } from "../types/account.types.ts";
 
 const accountsRouter = new Router();
 
 // Get all accounts for authenticated user
-accountsRouter.get("/api/accounts", requireAuth(async (ctx: AuthenticatedContext) => {
-  const userId = ctx.state.user.userId;
-
-  const result = await query(
-    `SELECT id, type, name, number, balance, currency, created_at as "createdAt"
+accountsRouter.get(
+  "/api/accounts",
+  requireAuth(async (ctx: AuthenticatedContext) => {
+    const userId = ctx.state.user.userId;
+    const result = await query(
+      `SELECT id, type, name, number, balance, currency, created_at as "createdAt"
      FROM accounts 
-     WHERE user_id = $1 
-     ORDER BY created_at DESC`,
-    [userId]
-  );
+     WHERE user_id = '${userId}'
+     ORDER BY created_at DESC`
+    );
 
-  const accounts: AccountResponse[] = result.rows.map(account => ({
-    id: account.id,
-    type: account.type,
-    name: account.name,
-    number: account.number,
-    balance: parseFloat(account.balance),
-    currency: account.currency,
-  }));
+    const accounts: AccountResponse[] = result.rows.map((account) => ({
+      id: account.id,
+      type: account.type,
+      name: account.name,
+      number: account.number,
+      balance: parseFloat(account.balance),
+      currency: account.currency,
+    }));
+    console.log("🚀 ~ accounts:", accounts);
 
-  ctx.response.body = { accounts };
-}));
+    ctx.response.body = { accounts };
+  })
+);
 
 // Get specific account balance
-accountsRouter.get("/api/accounts/:id/balance", requireAuth(async (ctx: AuthenticatedContext) => {
-  const userId = ctx.state.user.userId;
-  const accountId = ctx.params.id;
-
-  // Verify account belongs to user
-  const accountResult = await query(
-    `SELECT id, balance, currency 
+accountsRouter.get(
+  "/api/accounts/:id/balance",
+  requireAuth(async (ctx: AuthenticatedContext) => {
+    const userId = ctx.state.user.userId;
+    const accountId = ctx.params.id;
+    try {
+      // Verify account belongs to user
+      const accountResult = await query(
+        `SELECT id, balance, currency 
      FROM accounts 
-     WHERE id = $1 AND user_id = $2`,
-    [accountId, userId]
-  );
+     WHERE id = '${accountId}' AND user_id = '${userId}'`
+      );
+      console.log("🚀 ~ accountResult:", accountResult);
 
-  if (accountResult.rows.length === 0) {
-    throw Errors.ACCOUNT_NOT_FOUND;
-  }
+      if (accountResult.rows.length === 0) {
+        throw Errors.ACCOUNT_NOT_FOUND;
+      }
 
-  const account = accountResult.rows[0];
-  
-  const balanceResponse: BalanceResponse = {
-    balance: parseFloat(account.balance),
-    currency: account.currency,
-  };
+      const account = accountResult.rows[0];
 
-  ctx.response.body = balanceResponse;
-}));
+      const balanceResponse: BalanceResponse = {
+        balance: parseFloat(account.balance),
+        currency: account.currency,
+      };
+      ctx.response.body = balanceResponse;
+    } catch (error) {
+      console.log("🚀 ~ error:", error);
+    }
+  })
+);
 
 // Get account details
-accountsRouter.get("/api/accounts/:id", requireAuth(async (ctx: AuthenticatedContext) => {
-  const userId = ctx.state.user.userId;
-  const accountId = ctx.params.id;
+accountsRouter.get(
+  "/api/accounts/:id",
+  requireAuth(async (ctx: AuthenticatedContext) => {
+    const userId = ctx.state.user.userId;
+    const accountId = ctx.params.id;
 
-  const result = await query(
-    `SELECT id, type, name, number, balance, currency, created_at as "createdAt"
+    const result = await query(
+      `SELECT id, type, name, number, balance, currency, created_at as "createdAt"
      FROM accounts 
-     WHERE id = $1 AND user_id = $2`,
-    [accountId, userId]
-  );
+     WHERE id = '${accountId}' AND user_id = '${userId}'`
+    );
 
-  if (result.rows.length === 0) {
-    throw Errors.ACCOUNT_NOT_FOUND;
-  }
+    if (result.rows.length === 0) {
+      throw Errors.ACCOUNT_NOT_FOUND;
+    }
 
-  const account = result.rows[0];
-  
-  const accountResponse: AccountResponse = {
-    id: account.id,
-    type: account.type,
-    name: account.name,
-    number: account.number,
-    balance: parseFloat(account.balance),
-    currency: account.currency,
-  };
+    const account = result.rows[0];
 
-  ctx.response.body = { account: accountResponse };
-}));
+    const accountResponse: AccountResponse = {
+      id: account.id,
+      type: account.type,
+      name: account.name,
+      number: account.number,
+      balance: parseFloat(account.balance),
+      currency: account.currency,
+    };
+
+    ctx.response.body = { account: accountResponse };
+  })
+);
 
 export { accountsRouter };
+
