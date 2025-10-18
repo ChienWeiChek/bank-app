@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/store/auth";
+import { BiometricAuth } from "@/utils/biometricAuth";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -25,6 +26,8 @@ const LoginScreen = () => {
     loginFailure,
     biometricEnabled,
   } = useAuthStore();
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState<string>('Biometric');
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -54,6 +57,61 @@ const LoginScreen = () => {
 
   const navigateToRegister = () => {
     router.push("/(auth)/register");
+  };
+
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const available = await BiometricAuth.isBiometricAvailable();
+      setBiometricAvailable(available);
+
+      if (available) {
+        const types = await BiometricAuth.getAvailableBiometricTypes();
+        const typeName = BiometricAuth.getBiometricTypeName(types);
+        setBiometricType(typeName);
+      }
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    if (!biometricAvailable) {
+      Alert.alert(
+        'Biometric Unavailable',
+        'Biometric authentication is not available on this device.'
+      );
+      return;
+    }
+
+    loginStart();
+
+    try {
+      const result = await BiometricAuth.authenticate(
+        `Sign in with ${biometricType}`
+      );
+
+      if (result.success) {
+        // Simulate successful login with biometric
+        setTimeout(() => {
+          loginSuccess({
+            id: "1",
+            email: "demo@bank.com",
+            name: "John Doe",
+            phoneNumber: "+1234567890",
+          });
+          router.replace("/(tabs)");
+        }, 500);
+      } else {
+        loginFailure(result.message || 'Biometric authentication failed');
+      }
+    } catch (error) {
+      console.error('Biometric login error:', error);
+      loginFailure('An error occurred during biometric authentication');
+    }
   };
 
   return (
@@ -108,6 +166,18 @@ const LoginScreen = () => {
               {loading ? "Signing In..." : "Sign In"}
             </Text>
           </TouchableOpacity>
+
+          {biometricEnabled && biometricAvailable && (
+            <TouchableOpacity
+              style={[styles.biometricButton, loading && styles.biometricButtonDisabled]}
+              onPress={handleBiometricLogin}
+              disabled={loading}
+            >
+              <Text style={styles.biometricButtonText}>
+                {loading ? "Authenticating..." : `Sign In with ${biometricType}`}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.forgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
@@ -235,6 +305,24 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderLeftWidth: 4,
     borderLeftColor: "#0100e7",
+  },
+  biometricButton: {
+    backgroundColor: "#28a745",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#218838",
+  },
+  biometricButtonDisabled: {
+    backgroundColor: "#b3b3b3",
+    borderColor: "#999999",
+  },
+  biometricButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   demoText: {
     color: "#666666",
