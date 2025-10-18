@@ -1,8 +1,9 @@
 import { useTransactionsStore } from "@/store/transaction";
 import { Transaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -13,7 +14,7 @@ import {
 } from "react-native";
 
 const HistoryScreen = () => {
-  const { transactions } = useTransactionsStore();
+  const { transactions, loading, error, fetchTransactions } = useTransactionsStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<TRANSACTION_TYPE>(
     TRANSACTION_TYPE.ALL
@@ -21,6 +22,10 @@ const HistoryScreen = () => {
   const [filterStatus, setFilterStatus] = useState<TRANSACTION_STATUS>(
     TRANSACTION_STATUS.ALL
   );
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -150,6 +155,30 @@ const HistoryScreen = () => {
     );
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0100e7" />
+        <Text style={styles.loadingText}>Loading transactions...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={64} color="#dc3545" />
+        <Text style={styles.errorTitle}>Failed to load transactions</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchTransactions}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Search Bar */}
@@ -224,26 +253,28 @@ const HistoryScreen = () => {
         ))}
       </ScrollView>
 
-      {/* Transaction List */}
-      {filteredTransactions.length > 0 ? (
-        <FlatList
-          data={filteredTransactions}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTransactionItem}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.transactionsList}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <Ionicons name="receipt-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyStateTitle}>No transactions found</Text>
-          <Text style={styles.emptyStateText}>
-            {searchQuery || filterType !== "all" || filterStatus !== "all"
-              ? "Try adjusting your search or filters"
-              : "Your transaction history will appear here"}
-          </Text>
-        </View>
-      )}
+      {/* Transaction List Container */}
+      <View style={styles.transactionListContainer}>
+        {filteredTransactions.length > 0 ? (
+          <FlatList
+            data={filteredTransactions}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTransactionItem}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.transactionsList}
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="receipt-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyStateTitle}>No transactions found</Text>
+            <Text style={styles.emptyStateText}>
+              {searchQuery || filterType !== "all" || filterStatus !== "all"
+                ? "Try adjusting your search or filters"
+                : "Your transaction history will appear here"}
+            </Text>
+          </View>
+        )}
+      </View>
 
       {/* Summary */}
       {filteredTransactions.length > 0 && (
@@ -262,6 +293,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8f9fa",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#666666",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    padding: 40,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333333",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: "#666666",
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+  retryButton: {
+    backgroundColor: "#0100e7",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "600",
   },
   searchContainer: {
     flexDirection: "row",
@@ -295,6 +369,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
     marginRight: 8,
+    height: 36,
+    justifyContent: "center",
+    alignItems: "center",
   },
   filterButtonActive: {
     backgroundColor: "#0100e7",
@@ -307,6 +384,9 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     color: "#ffffff",
+  },
+  transactionListContainer: {
+    flex: 99999,
   },
   transactionsList: {
     padding: 16,

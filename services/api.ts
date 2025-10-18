@@ -19,7 +19,7 @@ interface ApiError {
 class ApiService {
   private getAuthHeaders(): Record<string, string> {
     const { accessToken } = useAuthStore.getState();
-    
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
@@ -39,7 +39,7 @@ class ApiService {
     try {
       const url = `${API_BASE_URL}${endpoint}`;
       const authHeaders = this.getAuthHeaders();
-      
+
       const response = await fetch(url, {
         headers: {
           ...authHeaders,
@@ -51,6 +51,12 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          // Log user out when unauthorized
+          const { logout } = useAuthStore.getState();
+          console.log("log user out");
+          logout();
+        }
         return {
           success: false,
           error: data.message || "An error occurred",

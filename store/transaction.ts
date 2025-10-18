@@ -1,5 +1,17 @@
+import { apiService } from "@/services/api";
 import { Contact, Transaction } from "@/types";
 import { create } from "zustand";
+
+// API Response Types
+interface TransactionHistoryResponse {
+  transactions: Transaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
 // Transactions Store
 interface TransactionsState {
@@ -14,53 +26,17 @@ interface TransactionsState {
   setError: (error: string | null) => void;
   addContact: (contact: Contact) => void;
   clearError: () => void;
+  fetchTransactions: (params?: {
+    page?: number;
+    limit?: number;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => Promise<void>;
 }
 
 export const useTransactionsStore = create<TransactionsState>()((set, get) => ({
-  transactions: [
-    {
-      id: "1",
-      type: "transfer",
-      amount: -250.0,
-      description: "Transfer to John Doe",
-      date: "2025-10-15T14:30:00Z",
-      status: "completed",
-      fromAccount: "1",
-      toAccount: "external",
-      recipientName: "John Doe",
-    },
-    {
-      id: "2",
-      type: "payment",
-      amount: -89.99,
-      description: "Electricity Bill",
-      date: "2025-10-14T09:15:00Z",
-      status: "completed",
-      fromAccount: "1",
-      toAccount: "utility",
-    },
-    {
-      id: "3",
-      type: "deposit",
-      amount: 1500.0,
-      description: "Salary Deposit",
-      date: "2025-10-10T08:00:00Z",
-      status: "completed",
-      fromAccount: "external",
-      toAccount: "1",
-    },
-    {
-      id: "4",
-      type: "transfer",
-      amount: -50.0,
-      description: "Transfer to Jane Smith",
-      date: "2025-10-08T16:45:00Z",
-      status: "completed",
-      fromAccount: "1",
-      toAccount: "external",
-      recipientName: "Jane Smith",
-    },
-  ],
+  transactions: [],
   contacts: [
     {
       id: "1",
@@ -87,6 +63,39 @@ export const useTransactionsStore = create<TransactionsState>()((set, get) => ({
   ],
   loading: false,
   error: null,
+
+  fetchTransactions: async (params = {}) => {
+    const { setLoading, setError } = get();
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Build query parameters
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.type) queryParams.append('type', params.type);
+      if (params.startDate) queryParams.append('startDate', params.startDate);
+      if (params.endDate) queryParams.append('endDate', params.endDate);
+
+      const queryString = queryParams.toString();
+      const endpoint = `/api/transactions/history${queryString ? `?${queryString}` : ''}`;
+
+      const response = await apiService.request<TransactionHistoryResponse>(endpoint);
+
+      if (response.success && response.data) {
+        set({ transactions: response.data.transactions });
+      } else {
+        setError(response.error || 'Failed to fetch transactions');
+      }
+    } catch (error) {
+      setError('Network error while fetching transactions');
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  },
 
   addTransaction: (transaction: Transaction) => {
     const { transactions } = get();

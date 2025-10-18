@@ -3,7 +3,8 @@ import { useAuthStore } from "@/store/auth";
 import { useTransactionsStore } from "@/store/transaction";
 import { Account } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect } from "react";
 import {
   Alert,
   RefreshControl,
@@ -23,7 +24,8 @@ const DashboardScreen = () => {
     loading,
     fetchAccounts,
   } = useAccountsStore();
-  const { transactions } = useTransactionsStore();
+  const { transactions, fetchTransactions } = useTransactionsStore();
+  const router = useRouter();
 
   const totalBalance = accounts.reduce(
     (sum: number, account: Account) => sum + account.balance,
@@ -81,6 +83,14 @@ const DashboardScreen = () => {
   const handleRefresh = () => {
     fetchAccounts();
   };
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
   return (
     <ScrollView
       style={styles.container}
@@ -180,7 +190,11 @@ const DashboardScreen = () => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
-          <TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              router.push("/(tabs)/history");
+            }}
+          >
             <Text style={styles.seeAllText}>See All</Text>
           </TouchableOpacity>
         </View>

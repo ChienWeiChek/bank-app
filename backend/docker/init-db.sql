@@ -65,14 +65,34 @@ CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 -- Insert sample data for development
 -- Sample user (password: SecurePassword123!)
 INSERT INTO users (id, email, name, phone_number, password_hash) VALUES
-('11111111-1111-1111-1111-111111111111', 'demo@bankapp.com', 'Demo User', '+1234567890', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi')
+('11111111-1111-1111-1111-111111111111', 'demo@bankapp.com', 'Demo User', '+1234567890', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi'),
+('88880000-0000-0000-0000-000000000000', 'alice.taylor@bankapp.com', 'Alice Taylor', '+1555000001', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi'),
+('88880000-0000-0000-0000-000000000001', 'brian.lee@bankapp.com', 'Brian Lee', '+1555000002', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi'),
+('88880000-0000-0000-0000-000000000002', 'carla.mendez@bankapp.com', 'Carla Mendez', '+1555000003', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi'),
+('88880000-0000-0000-0000-000000000003', 'david.nguyen@bankapp.com', 'David Nguyen', '+1555000004', '$2a$12$HfYccbcuQFShkZjQpgJwruyAl8ubKdLfe.X/QgrItgitKK4ktZdOi')
 ON CONFLICT (email) DO NOTHING;
 
 -- Sample accounts
 INSERT INTO accounts (id, user_id, type, name, number, balance, currency) VALUES
 ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'checking', 'Main Checking', '****1234', 12500.75, 'USD'),
 ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111', 'savings', 'Emergency Fund', '****5678', 8500.25, 'USD'),
-('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'credit', 'Credit Card', '****9012', -1250.50, 'USD')
+('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'credit', 'Credit Card', '****9012', -1250.50, 'USD'),
+
+-- Alice Taylor
+('a1000000-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000000', 'checking', 'Alice Main Checking', '****1100', 2450.25, 'USD'),
+('a1000000-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000000', 'savings', 'Alice Savings', '****1101', 5400.50, 'USD'),
+
+-- Brian Lee
+('a2000000-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000001', 'checking', 'Brian Checking', '****2200', 8600.00, 'USD'),
+('a2000000-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000001', 'savings', 'Brian Travel Fund', '****2201', 1200.30, 'USD'),
+
+-- Carla Mendez
+('a3000000-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000002', 'checking', 'Carla Everyday', '****3300', 3900.75, 'USD'),
+('a3000000-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000002', 'savings', 'Carla SaveMore', '****3301', 9200.10, 'USD'),
+
+-- David Nguyen
+('a4000000-0000-0000-0000-000000000001', '88880000-0000-0000-0000-000000000003', 'checking', 'David Main Account', '****4400', 10100.00, 'USD'),
+('a4000000-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000003', 'credit',   'David Credit Line', '****4401', -500.00, 'USD')
 ON CONFLICT (id) DO NOTHING;
 
 -- Sample contacts
