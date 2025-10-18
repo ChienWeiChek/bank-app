@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,7 +15,17 @@ import {
 } from "react-native";
 
 const HistoryScreen = () => {
-  const { transactions, loading, error, fetchTransactions } = useTransactionsStore();
+  const { 
+    transactions, 
+    loading, 
+    error, 
+    refreshing,
+    loadingMore,
+    pagination,
+    fetchTransactions, 
+    refreshTransactions, 
+    loadMoreTransactions 
+  } = useTransactionsStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<TRANSACTION_TYPE>(
     TRANSACTION_TYPE.ALL
@@ -26,6 +37,16 @@ const HistoryScreen = () => {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  const handleRefresh = () => {
+    refreshTransactions();
+  };
+
+  const handleLoadMore = () => {
+    if (pagination.hasMore && !loadingMore) {
+      loadMoreTransactions();
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -262,6 +283,32 @@ const HistoryScreen = () => {
             renderItem={renderTransactionItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.transactionsList}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={["#0100e7"]}
+                tintColor="#0100e7"
+              />
+            }
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={styles.loadingMoreContainer}>
+                  <ActivityIndicator size="small" color="#0100e7" />
+                  <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View>
+              ) : pagination.hasMore ? (
+                <View style={styles.loadMoreHint}>
+                  <Text style={styles.loadMoreHintText}>Pull up to load more</Text>
+                </View>
+              ) : filteredTransactions.length > 10 ? (
+                <View style={styles.endOfList}>
+                  <Text style={styles.endOfListText}>No more transactions</Text>
+                </View>
+              ) : null
+            }
           />
         ) : (
           <View style={styles.emptyState}>
@@ -280,7 +327,7 @@ const HistoryScreen = () => {
       {filteredTransactions.length > 0 && (
         <View style={styles.summary}>
           <Text style={styles.summaryText}>
-            Showing {filteredTransactions.length} of {transactions.length}{" "}
+            Showing {filteredTransactions.length} of {pagination.total}{" "}
             transactions
           </Text>
         </View>
@@ -390,6 +437,35 @@ const styles = StyleSheet.create({
   },
   transactionsList: {
     padding: 16,
+  },
+  loadingMoreContainer: {
+    padding: 16,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  loadingMoreText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: "#666666",
+  },
+  loadMoreHint: {
+    padding: 16,
+    alignItems: "center",
+  },
+  loadMoreHintText: {
+    fontSize: 14,
+    color: "#999999",
+    fontStyle: "italic",
+  },
+  endOfList: {
+    padding: 16,
+    alignItems: "center",
+  },
+  endOfListText: {
+    fontSize: 14,
+    color: "#999999",
+    fontStyle: "italic",
   },
   transactionItem: {
     flexDirection: "row",
