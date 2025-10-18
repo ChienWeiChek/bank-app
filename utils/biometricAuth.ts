@@ -1,3 +1,4 @@
+import authService from '@/services/auth';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
@@ -88,11 +89,15 @@ export class BiometricAuth {
   }
 
   /**
-   * Store biometric preference securely
+   * Store biometric preference securely and update server
    */
   static async setBiometricPreference(enabled: boolean): Promise<void> {
     try {
+      // Store locally
       await SecureStore.setItemAsync('biometric_enabled', enabled.toString());
+      
+      // Update server via API
+      await authService.updateBiometricSetting(enabled);
     } catch (error) {
       console.error('Error storing biometric preference:', error);
       throw new Error('Failed to save biometric preference');

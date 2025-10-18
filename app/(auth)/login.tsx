@@ -1,3 +1,4 @@
+import AuthApi from "@/services/auth";
 import { useAuthStore } from "@/store/auth";
 import { BiometricAuth } from "@/utils/biometricAuth";
 import { useRouter } from "expo-router";
@@ -15,8 +16,8 @@ import {
 } from "react-native";
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("demo@bank.com");
-  const [password, setPassword] = useState("password");
+  const [email, setEmail] = useState("demo@bankapp.com");
+  const [password, setPassword] = useState("SecurePassword123!");
   const router = useRouter();
   const {
     loading,
@@ -25,9 +26,10 @@ const LoginScreen = () => {
     loginSuccess,
     loginFailure,
     biometricEnabled,
+    refreshToken,
   } = useAuthStore();
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricType, setBiometricType] = useState<string>('Biometric');
+  const [biometricType, setBiometricType] = useState<string>("Biometric");
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -37,22 +39,26 @@ const LoginScreen = () => {
 
     loginStart();
 
-    // Simulate API call
-    setTimeout(() => {
-      if (email === "demo@bank.com" && password === "password") {
-        loginSuccess({
-          id: "1",
-          email: "demo@bank.com",
-          name: "John Doe",
-          phoneNumber: "+1234567890",
-        });
+    try {
+      const response = await AuthApi.login({ email, password });
+
+      if (response.success && response.data) {
+        const { user, tokens } = response.data;
+        loginSuccess(user, tokens);
+
         // Redirect to biometric setup screen after successful login
-        if (biometricEnabled) router.replace("/(tabs)");
-        else router.replace("/(auth)/biometric-setup");
+        if (user.biometricEnabled && biometricEnabled) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/(auth)/biometric-setup");
+        }
       } else {
-        loginFailure("Invalid email or password");
+        loginFailure(response.error || "Login failed. Please try again.");
       }
-    }, 1500);
+    } catch (error) {
+      console.error("Login error:", error);
+      loginFailure("An unexpected error occurred. Please try again.");
+    }
   };
 
   const navigateToRegister = () => {
@@ -74,16 +80,21 @@ const LoginScreen = () => {
         setBiometricType(typeName);
       }
     } catch (error) {
-      console.error('Error checking biometric availability:', error);
+      console.error("Error checking biometric availability:", error);
     }
   };
 
   const handleBiometricLogin = async () => {
     if (!biometricAvailable) {
       Alert.alert(
-        'Biometric Unavailable',
-        'Biometric authentication is not available on this device.'
+        "Biometric Unavailable",
+        "Biometric authentication is not available on this device."
       );
+      return;
+    }
+
+    if (!refreshToken) {
+      Alert.alert("Login credential expired", "Kindly re login again");
       return;
     }
 
@@ -94,23 +105,30 @@ const LoginScreen = () => {
         `Sign in with ${biometricType}`
       );
 
-      if (result.success) {
-        // Simulate successful login with biometric
-        setTimeout(() => {
-          loginSuccess({
-            id: "1",
-            email: "demo@bank.com",
-            name: "John Doe",
-            phoneNumber: "+1234567890",
-          });
-          router.replace("/(tabs)");
-        }, 500);
-      } else {
-        loginFailure(result.message || 'Biometric authentication failed');
+      if (!(result.success && refreshToken)) {
+        loginFailure(result.message || "Biometric authentication failed");
+        return;
       }
+      // For biometric login, we'll need to implement proper API integration
+      // For now, we'll use the demo credentials for biometric login
+      const tokens = await AuthApi.refreshToken(refreshToken);
+
+      if (!(tokens.success && tokens.data)) {
+        loginFailure(tokens.error || "Biometric authentication failed");
+        return;
+      }
+
+      const user = await AuthApi.getCurrentUser(tokens.data.accessToken);
+      if (!(user.success && user.data?.user)) {
+        loginFailure(user.error || "Biometric login failed. Please try again.");
+        return;
+      }
+
+      loginSuccess(user.data?.user, tokens.data);
+      router.replace("/(tabs)");
     } catch (error) {
-      console.error('Biometric login error:', error);
-      loginFailure('An error occurred during biometric authentication');
+      console.error("Biometric login error:", error);
+      loginFailure("An error occurred during biometric authentication");
     }
   };
 
@@ -167,14 +185,19 @@ const LoginScreen = () => {
             </Text>
           </TouchableOpacity>
 
-          {biometricEnabled && biometricAvailable && (
+          {biometricEnabled && biometricAvailable && refreshToken && (
             <TouchableOpacity
-              style={[styles.biometricButton, loading && styles.biometricButtonDisabled]}
+              style={[
+                styles.biometricButton,
+                loading && styles.biometricButtonDisabled,
+              ]}
               onPress={handleBiometricLogin}
               disabled={loading}
             >
               <Text style={styles.biometricButtonText}>
-                {loading ? "Authenticating..." : `Sign In with ${biometricType}`}
+                {loading
+                  ? "Authenticating..."
+                  : `Sign In with ${biometricType}`}
               </Text>
             </TouchableOpacity>
           )}

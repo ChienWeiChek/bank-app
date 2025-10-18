@@ -1,24 +1,24 @@
 import { Router } from "oak";
 import { z } from "zod";
 import { query } from "../config/database.ts";
+import { AppError, Errors } from "../middleware/error.middleware.ts";
 import {
-  hashPassword,
-  verifyPassword,
-  validatePassword,
-} from "../utils/password.ts";
+  AuthResponse,
+  CreateUserRequest,
+  LoginRequest,
+  RefreshTokenRequest,
+} from "../types/user.types.ts";
 import {
   createJWT,
   createRefreshToken,
-  verifyRefreshToken,
   verifyJWT,
+  verifyRefreshToken,
 } from "../utils/jwt.ts";
-import { Errors, AppError } from "../middleware/error.middleware.ts";
 import {
-  CreateUserRequest,
-  LoginRequest,
-  AuthResponse,
-  RefreshTokenRequest,
-} from "../types/user.types.ts";
+  hashPassword,
+  validatePassword,
+  verifyPassword,
+} from "../utils/password.ts";
 
 const authRouter = new Router();
 
@@ -131,7 +131,6 @@ authRouter.post("/api/auth/login", async (ctx) => {
      FROM users WHERE email = '${body.email}'`
   );
 
-
   if (result.rows.length === 0) {
     throw Errors.INVALID_CREDENTIALS;
   }
@@ -177,7 +176,7 @@ authRouter.post("/api/auth/refresh", async (ctx) => {
 
   try {
     body = await ctx.request.body().value;
-    console.log("🚀 ~ body:", body)
+    console.log("🚀 ~ body:", body);
 
     refreshSchema.parse(body);
   } catch (error) {
@@ -207,31 +206,31 @@ authRouter.post("/api/auth/refresh", async (ctx) => {
 // Get current user endpoint
 authRouter.get("/api/auth/me", async (ctx) => {
   const authHeader = ctx.request.headers.get("Authorization");
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw Errors.UNAUTHORIZED;
   }
-  
+
   const token = authHeader.substring(7); // Remove "Bearer " prefix
-  
+
   try {
     // Verify the access token
     const payload = await verifyJWT(token);
-    
+
     // Get user from database
     const result = await query(
       `SELECT id, email, name, phone_number as "phoneNumber", 
               biometric_enabled as "biometricEnabled", 
               created_at as "createdAt", updated_at as "updatedAt"
-       FROM users WHERE id = '${payload.userId}'`,
+       FROM users WHERE id = '${payload.userId}'`
     );
-    
+
     if (result.rows.length === 0) {
       throw Errors.UNAUTHORIZED;
     }
-    
+
     const user = result.rows[0];
-    
+
     ctx.response.body = {
       user: {
         id: user.id,
@@ -251,21 +250,24 @@ authRouter.get("/api/auth/me", async (ctx) => {
 // Update biometric enabled endpoint
 authRouter.patch("/api/auth/biometric", async (ctx) => {
   const authHeader = ctx.request.headers.get("Authorization");
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw Errors.UNAUTHORIZED;
   }
-  
+
   const token = authHeader.substring(7); // Remove "Bearer " prefix
-  
+
   let body: { biometricEnabled: boolean };
-  
+
   try {
     body = await ctx.request.body().value;
-    
+
     // Validate request body
     if (typeof body.biometricEnabled !== "boolean") {
-      throw new AppError("VALIDATION_ERROR", "biometricEnabled must be a boolean");
+      throw new AppError(
+        "VALIDATION_ERROR",
+        "biometricEnabled must be a boolean"
+      );
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -273,28 +275,27 @@ authRouter.patch("/api/auth/biometric", async (ctx) => {
     }
     throw Errors.VALIDATION_ERROR;
   }
-  
+
   try {
     // Verify the access token
     const payload = await verifyJWT(token);
-    
+
     // Update user biometric setting
     const result = await query(
       `UPDATE users 
-       SET biometric_enabled = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
+       SET biometric_enabled = '${body.biometricEnabled}', updated_at = CURRENT_TIMESTAMP
+       WHERE id = '${payload.userId}'
        RETURNING id, email, name, phone_number as "phoneNumber", 
                  biometric_enabled as "biometricEnabled", 
-                 created_at as "createdAt", updated_at as "updatedAt"`,
-      [body.biometricEnabled, payload.userId]
+                 created_at as "createdAt", updated_at as "updatedAt"`
     );
-    
+
     if (result.rows.length === 0) {
       throw Errors.UNAUTHORIZED;
     }
-    
+
     const user = result.rows[0];
-    
+
     ctx.response.body = {
       user: {
         id: user.id,
@@ -317,3 +318,4 @@ authRouter.post("/api/auth/logout", async (ctx) => {
 });
 
 export { authRouter };
+

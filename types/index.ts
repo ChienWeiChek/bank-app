@@ -4,6 +4,9 @@ export interface User {
   email: string;
   name: string;
   phoneNumber: string;
+  biometricEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Account {
