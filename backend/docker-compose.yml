@@ -1,0 +1,42 @@
+services:
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DATABASE_URL=postgresql://user:password@db:5432/bank_app
+  #     - JWT_SECRET=your_jwt_secret_here_change_in_production
+  #     - JWT_REFRESH_SECRET=your_refresh_secret_here_change_in_production
+  #     - PORT=8000
+  #     - NODE_ENV=development
+  #     - CORS_ORIGIN=http://localhost:3000
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./deno.json:/app/deno.json
+  #   command: deno run --allow-net --allow-read --allow-write --allow-env --watch src/main.ts
+  #   restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=bank_app
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d bank_app"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
