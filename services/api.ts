@@ -17,6 +17,12 @@ interface ApiError {
 }
 
 class ApiService {
+  private navigationCallback: (() => void) | null = null;
+
+  setNavigationCallback(callback: () => void) {
+    this.navigationCallback = callback;
+  }
+
   private getAuthHeaders(): Record<string, string> {
     const { accessToken } = useAuthStore.getState();
 
@@ -56,6 +62,11 @@ class ApiService {
           const { logout } = useAuthStore.getState();
           console.log("log user out");
           logout();
+          
+          // Trigger navigation callback if set
+          if (this.navigationCallback) {
+            this.navigationCallback();
+          }
         }
         return {
           success: false,
