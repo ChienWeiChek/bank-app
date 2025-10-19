@@ -42,7 +42,6 @@ transactionsRouter.post(
 
     try {
       body = await ctx.request.body().value;
-      console.log("🚀 ~ body.amount:", body);
 
       transferSchema.parse(body);
     } catch (error) {

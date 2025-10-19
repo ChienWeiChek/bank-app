@@ -47,7 +47,6 @@ accountsRouter.get(
      FROM accounts 
      WHERE id = '${accountId}' AND user_id = '${userId}'`
       );
-      console.log("🚀 ~ accountResult:", accountResult);
 
       if (accountResult.rows.length === 0) {
         throw Errors.ACCOUNT_NOT_FOUND;
