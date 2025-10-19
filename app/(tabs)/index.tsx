@@ -1,6 +1,6 @@
+import { useTransactions } from "@/hooks/useTransactions";
 import { useAccountsStore } from "@/store/account";
 import { useAuthStore } from "@/store/auth";
-import { useTransactionsStore } from "@/store/transaction";
 import { Account } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -24,7 +24,10 @@ const DashboardScreen = () => {
     loading,
     fetchAccounts,
   } = useAccountsStore();
-  const { transactions, fetchTransactions } = useTransactionsStore();
+  
+  // Use SWR hook for recent transactions (limit to 5 for dashboard)
+  const { transactions, isLoading: transactionsLoading, refresh: refreshTransactions } = useTransactions();
+  
   const router = useRouter();
 
   const totalBalance = accounts.reduce(
@@ -42,7 +45,7 @@ const DashboardScreen = () => {
       title: "Transfer",
       icon: "swap-horizontal",
       color: "#0100e7",
-      onPress: () => Alert.alert("Transfer", "Navigate to transfer screen"),
+      onPress: () => router.push("/(tabs)/transfer"),
     },
     {
       title: "Pay Bills",
@@ -82,14 +85,12 @@ const DashboardScreen = () => {
 
   const handleRefresh = () => {
     fetchAccounts();
+    refreshTransactions();
   };
+
   useEffect(() => {
     fetchAccounts();
   }, [fetchAccounts]);
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
 
   return (
     <ScrollView
@@ -199,42 +200,51 @@ const DashboardScreen = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.transactionsList}>
-          {recentTransactions.map((transaction: any) => (
-            <View key={transaction.id} style={styles.transactionItem}>
-              <View style={styles.transactionIcon}>
-                <Ionicons
-                  name={
-                    transaction.type === "transfer"
-                      ? "swap-horizontal"
-                      : transaction.type === "payment"
-                      ? "document-text"
-                      : transaction.type === "deposit"
-                      ? "arrow-down"
-                      : "arrow-up"
-                  }
-                  size={20}
-                  color={transaction.amount > 0 ? "#28a745" : "#dc3545"}
-                />
-              </View>
-              <View style={styles.transactionDetails}>
-                <Text style={styles.transactionDescription}>
-                  {transaction.description}
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((transaction: any) => (
+              <View key={transaction.id} style={styles.transactionItem}>
+                <View style={styles.transactionIcon}>
+                  <Ionicons
+                    name={
+                      transaction.type === "transfer"
+                        ? "swap-horizontal"
+                        : transaction.type === "payment"
+                        ? "document-text"
+                        : transaction.type === "deposit"
+                        ? "arrow-down"
+                        : "arrow-up"
+                    }
+                    size={20}
+                    color={transaction.amount > 0 ? "#28a745" : "#dc3545"}
+                  />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionDescription}>
+                    {transaction.description}
+                  </Text>
+                  <Text style={styles.transactionDate}>
+                    {formatDate(transaction.date)}
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    styles.transactionAmount,
+                    { color: transaction.amount > 0 ? "#28a745" : "#dc3545" },
+                  ]}
+                >
+                  {transaction.amount > 0 ? "+" : ""}
+                  {formatCurrency(transaction.amount)}
                 </Text>
-                <Text style={styles.transactionDate}>
-                  {formatDate(transaction.date)}
-                </Text>
               </View>
-              <Text
-                style={[
-                  styles.transactionAmount,
-                  { color: transaction.amount > 0 ? "#28a745" : "#dc3545" },
-                ]}
-              >
-                {transaction.amount > 0 ? "+" : ""}
-                {formatCurrency(transaction.amount)}
+            ))
+          ) : (
+            <View style={styles.emptyTransactions}>
+              <Ionicons name="receipt-outline" size={32} color="#ccc" />
+              <Text style={styles.emptyTransactionsText}>
+                No recent transactions
               </Text>
             </View>
-          ))}
+          )}
         </View>
       </View>
     </ScrollView>
@@ -386,6 +396,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     borderRadius: 12,
     overflow: "hidden",
+    minHeight: 100,
   },
   transactionItem: {
     flexDirection: "row",
@@ -418,6 +429,17 @@ const styles = StyleSheet.create({
   transactionAmount: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  emptyTransactions: {
+    padding: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTransactionsText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#666666",
+    textAlign: "center",
   },
 });
 

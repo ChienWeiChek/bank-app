@@ -1,7 +1,7 @@
-import { useTransactionsStore } from "@/store/transaction";
+import { useTransactions } from "@/hooks/useTransactions";
 import { Transaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,17 +15,6 @@ import {
 } from "react-native";
 
 const HistoryScreen = () => {
-  const {
-    transactions,
-    loading,
-    error,
-    refreshing,
-    loadingMore,
-    pagination,
-    fetchTransactions,
-    refreshTransactions,
-    loadMoreTransactions,
-  } = useTransactionsStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<TRANSACTION_TYPE>(
     TRANSACTION_TYPE.ALL
@@ -34,32 +23,39 @@ const HistoryScreen = () => {
     TRANSACTION_STATUS.ALL
   );
 
-  // Fetch transactions with current filters
-  const fetchTransactionsWithFilters = useCallback(() => {
-    const params: any = { page: 1 }; // Always start from page 1 when filters change
-    params.type = filterType;
-    params.status = filterStatus;
-    if (searchQuery) params.search = searchQuery;
+  // Use SWR hook with current filters
+  const {
+    transactions,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+    total,
+    loadMore,
+    refresh,
+    isRefreshing,
+  } = useTransactions({
+    type: filterType !== TRANSACTION_TYPE.ALL ? filterType : undefined,
+    status: filterStatus !== TRANSACTION_STATUS.ALL ? filterStatus : undefined,
+    search: searchQuery || undefined,
+  });
 
-    fetchTransactions(params);
-  }, [fetchTransactions, filterType, filterStatus, searchQuery]);
-
-  // Single effect to handle all filter changes with debouncing
+  // Debounced search effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      fetchTransactionsWithFilters();
+      // SWR will automatically refetch when options change
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [filterType, filterStatus, searchQuery, fetchTransactionsWithFilters]);
+  }, [searchQuery]);
 
   const handleRefresh = () => {
-    refreshTransactions();
+    refresh();
   };
 
   const handleLoadMore = () => {
-    if (pagination.hasMore && !loadingMore) {
-      loadMoreTransactions();
+    if (hasMore && !isLoadingMore) {
+      loadMore();
     }
   };
 
@@ -117,9 +113,6 @@ const HistoryScreen = () => {
         return "#6c757d";
     }
   };
-
-  // Use transactions directly from API (already filtered by backend)
-  const filteredTransactions = transactions;
 
   const filterButtons = [
     { key: "all", label: "All" },
@@ -183,10 +176,10 @@ const HistoryScreen = () => {
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle-outline" size={64} color="#dc3545" />
         <Text style={styles.errorTitle}>Failed to load transactions</Text>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>{error.message}</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={fetchTransactions}
+          onPress={refresh}
         >
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
@@ -268,7 +261,7 @@ const HistoryScreen = () => {
         ))}
       </ScrollView>
 
-      {loading ? (
+      {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0100e7" />
           <Text style={styles.loadingText}>Loading transactions...</Text>
@@ -277,16 +270,16 @@ const HistoryScreen = () => {
         <>
           {/* Transaction List Container */}
           <View style={styles.transactionListContainer}>
-            {filteredTransactions.length > 0 ? (
+            {transactions.length > 0 ? (
               <FlatList
-                data={filteredTransactions}
-                keyExtractor={(item, index) => `${item.id}`}
+                data={transactions}
+                keyExtractor={(item) => `${item.id}`}
                 renderItem={renderTransactionItem}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.transactionsList}
                 refreshControl={
                   <RefreshControl
-                    refreshing={refreshing}
+                    refreshing={isRefreshing}
                     onRefresh={handleRefresh}
                     colors={["#0100e7"]}
                     tintColor="#0100e7"
@@ -295,20 +288,20 @@ const HistoryScreen = () => {
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={
-                  loadingMore ? (
+                  isLoadingMore ? (
                     <View style={styles.loadingMoreContainer}>
                       <ActivityIndicator size="small" color="#0100e7" />
                       <Text style={styles.loadingMoreText}>
                         Loading more...
                       </Text>
                     </View>
-                  ) : pagination.hasMore ? (
+                  ) : hasMore ? (
                     <View style={styles.loadMoreHint}>
                       <Text style={styles.loadMoreHintText}>
                         Pull up to load more
                       </Text>
                     </View>
-                  ) : filteredTransactions.length > 10 ? (
+                  ) : transactions.length > 10 ? (
                     <View style={styles.endOfList}>
                       <Text style={styles.endOfListText}>
                         No more transactions
@@ -333,10 +326,10 @@ const HistoryScreen = () => {
           </View>
 
           {/* Summary */}
-          {filteredTransactions.length > 0 && (
+          {transactions.length > 0 && (
             <View style={styles.summary}>
               <Text style={styles.summaryText}>
-                Showing {filteredTransactions.length} of {pagination.total}{" "}
+                Showing {transactions.length} of {total}{" "}
                 transactions
               </Text>
             </View>
