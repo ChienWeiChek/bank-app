@@ -7,10 +7,9 @@ import {
 } from "../middleware/auth.middleware.ts";
 import { AppError, Errors } from "../middleware/error.middleware.ts";
 import {
-  TransactionHistoryRequest,
   TransactionHistoryResponse,
   TransactionResponse,
-  TransferRequest,
+  TransferRequest
 } from "../types/transaction.types.ts";
 
 const transactionsRouter = new Router();
@@ -28,6 +27,8 @@ const historySchema = z.object({
   page: z.number().min(1).default(1),
   limit: z.number().min(1).max(100).default(20),
   type: z.enum(["transfer", "payment", "deposit", "withdrawal"]).optional(),
+  status: z.enum(["completed", "pending", "failed"]).optional(),
+  search: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
@@ -148,82 +149,93 @@ transactionsRouter.get(
     const userId = ctx.state.user.userId;
 
     // Parse query parameters
-    const queryParams: TransactionHistoryRequest = {
+    const queryParams = {
       page: parseInt(ctx.request.url.searchParams.get("page") || "1"),
       limit: parseInt(ctx.request.url.searchParams.get("limit") || "20"),
-      type: (ctx.request.url.searchParams.get("type") as any) || undefined,
+      type: ctx.request.url.searchParams.get("type") || undefined,
+      status: ctx.request.url.searchParams.get("status") || undefined,
+      search: ctx.request.url.searchParams.get("search") || undefined,
       startDate: ctx.request.url.searchParams.get("startDate") || undefined,
       endDate: ctx.request.url.searchParams.get("endDate") || undefined,
     };
 
     try {
-      historySchema.parse(queryParams);
+      const validatedParams = historySchema.parse(queryParams);
+
+      const offset = (validatedParams.page - 1) * validatedParams.limit;
+
+      // Build WHERE clause
+      let whereClause = `WHERE user_id = '${userId}'`;
+      const params: any[] = [];
+
+      if (validatedParams.type) {
+        whereClause += ` AND type = '${validatedParams.type}'`;
+      }
+
+      if (validatedParams.status) {
+        whereClause += ` AND status = '${validatedParams.status}'`;
+      }
+
+      if (validatedParams.search) {
+        whereClause += ` AND (description ILIKE '%${validatedParams.search}%' OR recipient_name ILIKE '%${validatedParams.search}%')`;
+      }
+
+      if (validatedParams.startDate) {
+        whereClause += ` AND date >= '${validatedParams.startDate}'`;
+      }
+
+      if (validatedParams.endDate) {
+        whereClause += ` AND date <= '${validatedParams.endDate}'`;
+      }
+
+      // Get transactions
+      const transactionsResult = await query(
+        `SELECT id, type, amount, description, date, status, from_account_id as "fromAccountId", to_account_id as "toAccountId", recipient_name as "recipientName"
+       FROM transactions 
+       ${whereClause}
+       ORDER BY date DESC
+       LIMIT ${validatedParams.limit} OFFSET ${offset}`
+      );
+
+      // Get total count
+      const countResult = await query(
+        `SELECT COUNT(*) as total FROM transactions ${whereClause}`
+      );
+
+      const total = parseInt(countResult.rows[0].total);
+      const totalPages = Math.ceil(total / validatedParams.limit);
+
+      const transactions: TransactionResponse[] = transactionsResult.rows.map(
+        (transaction) => ({
+          id: transaction.id,
+          type: transaction.type,
+          amount: parseFloat(transaction.amount),
+          description: transaction.description,
+          date: transaction.date.toISOString(),
+          status: transaction.status,
+          fromAccount: transaction.fromAccountId,
+          toAccount: transaction.toAccountId,
+          recipientName: transaction.recipientName,
+        })
+      );
+
+      const response: TransactionHistoryResponse = {
+        transactions,
+        pagination: {
+          page: validatedParams.page,
+          limit: validatedParams.limit,
+          total,
+          totalPages,
+        },
+      };
+
+      ctx.response.body = response;
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new AppError("VALIDATION_ERROR", error.errors[0].message);
       }
       throw Errors.VALIDATION_ERROR;
     }
-
-    const offset = (queryParams.page - 1) * queryParams.limit;
-
-    // Build WHERE clause
-    let whereClause = `WHERE user_id = '${userId}'`;
-
-    if (queryParams.type) {
-      whereClause += ` AND type = '${queryParams.type}'`;
-    }
-
-    if (queryParams.startDate) {
-      whereClause += ` AND date >= '${queryParams.startDate}'`;
-    }
-
-    if (queryParams.endDate) {
-      whereClause += ` AND date <= '${queryParams.endDate}'`;
-    }
-
-    // Get transactions
-    const transactionsResult = await query(
-      `SELECT id, type, amount, description, date, status, from_account_id as "fromAccountId", to_account_id as "toAccountId", recipient_name as "recipientName"
-     FROM transactions 
-     ${whereClause}
-     ORDER BY date DESC
-     LIMIT ${queryParams.limit} OFFSET ${offset}`
-    );
-
-    // Get total count
-    const countResult = await query(
-      `SELECT COUNT(*) as total FROM transactions ${whereClause}`
-    );
-
-    const total = parseInt(countResult.rows[0].total);
-    const totalPages = Math.ceil(total / queryParams.limit);
-
-    const transactions: TransactionResponse[] = transactionsResult.rows.map(
-      (transaction) => ({
-        id: transaction.id,
-        type: transaction.type,
-        amount: parseFloat(transaction.amount),
-        description: transaction.description,
-        date: transaction.date.toISOString(),
-        status: transaction.status,
-        fromAccount: transaction.fromAccountId,
-        toAccount: transaction.toAccountId,
-        recipientName: transaction.recipientName,
-      })
-    );
-
-    const response: TransactionHistoryResponse = {
-      transactions,
-      pagination: {
-        page: queryParams.page,
-        limit: queryParams.limit,
-        total,
-        totalPages,
-      },
-    };
-
-    ctx.response.body = response;
   })
 );
 

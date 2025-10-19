@@ -1,7 +1,7 @@
 import { useTransactionsStore } from "@/store/transaction";
 import { Transaction, TRANSACTION_STATUS, TRANSACTION_TYPE } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,16 +15,16 @@ import {
 } from "react-native";
 
 const HistoryScreen = () => {
-  const { 
-    transactions, 
-    loading, 
-    error, 
+  const {
+    transactions,
+    loading,
+    error,
     refreshing,
     loadingMore,
     pagination,
-    fetchTransactions, 
-    refreshTransactions, 
-    loadMoreTransactions 
+    fetchTransactions,
+    refreshTransactions,
+    loadMoreTransactions,
   } = useTransactionsStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<TRANSACTION_TYPE>(
@@ -34,9 +34,24 @@ const HistoryScreen = () => {
     TRANSACTION_STATUS.ALL
   );
 
+  // Fetch transactions with current filters
+  const fetchTransactionsWithFilters = useCallback(() => {
+    const params: any = { page: 1 }; // Always start from page 1 when filters change
+    params.type = filterType;
+    params.status = filterStatus;
+    if (searchQuery) params.search = searchQuery;
+
+    fetchTransactions(params);
+  }, [fetchTransactions, filterType, filterStatus, searchQuery]);
+
+  // Single effect to handle all filter changes with debouncing
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const timeoutId = setTimeout(() => {
+      fetchTransactionsWithFilters();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [filterType, filterStatus, searchQuery, fetchTransactionsWithFilters]);
 
   const handleRefresh = () => {
     refreshTransactions();
@@ -103,24 +118,8 @@ const HistoryScreen = () => {
     }
   };
 
-  const filteredTransactions = transactions.filter(
-    (transaction: Transaction) => {
-      const matchesSearch =
-        transaction.description
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        (transaction.recipientName &&
-          transaction.recipientName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
-      const matchesType =
-        filterType === "all" || transaction.type === filterType;
-      const matchesStatus =
-        filterStatus === "all" || transaction.status === filterStatus;
-
-      return matchesSearch && matchesType && matchesStatus;
-    }
-  );
+  // Use transactions directly from API (already filtered by backend)
+  const filteredTransactions = transactions;
 
   const filterButtons = [
     { key: "all", label: "All" },
@@ -151,40 +150,32 @@ const HistoryScreen = () => {
             <Text style={styles.transactionDate}>
               {formatDate(item.date)} • {formatTime(item.date)}
             </Text>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: `${statusColor}20` },
-              ]}
-            >
-              <Text style={[styles.statusText, { color: statusColor }]}>
-                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-              </Text>
-            </View>
           </View>
         </View>
-        <Text
-          style={[
-            styles.transactionAmount,
-            { color: item.amount > 0 ? "#28a745" : "#dc3545" },
-          ]}
-        >
-          {item.amount > 0 ? "+" : ""}
-          {formatCurrency(item.amount)}
-        </Text>
+        <View style={styles.transactionAmountView}>
+          <Text
+            style={[
+              styles.transactionAmount,
+              { color: item.amount > 0 ? "#28a745" : "#dc3545" },
+            ]}
+          >
+            {item.amount > 0 ? "+" : ""}
+            {formatCurrency(item.amount)}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: `${statusColor}20` },
+            ]}
+          >
+            <Text style={[styles.statusText, { color: statusColor }]}>
+              {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            </Text>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   };
-
-  // Show loading state
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0100e7" />
-        <Text style={styles.loadingText}>Loading transactions...</Text>
-      </View>
-    );
-  }
 
   // Show error state
   if (error) {
@@ -193,7 +184,10 @@ const HistoryScreen = () => {
         <Ionicons name="alert-circle-outline" size={64} color="#dc3545" />
         <Text style={styles.errorTitle}>Failed to load transactions</Text>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchTransactions}>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={fetchTransactions}
+        >
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
       </View>
@@ -274,63 +268,80 @@ const HistoryScreen = () => {
         ))}
       </ScrollView>
 
-      {/* Transaction List Container */}
-      <View style={styles.transactionListContainer}>
-        {filteredTransactions.length > 0 ? (
-          <FlatList
-            data={filteredTransactions}
-            keyExtractor={(item) => item.id}
-            renderItem={renderTransactionItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.transactionsList}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                colors={["#0100e7"]}
-                tintColor="#0100e7"
-              />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              loadingMore ? (
-                <View style={styles.loadingMoreContainer}>
-                  <ActivityIndicator size="small" color="#0100e7" />
-                  <Text style={styles.loadingMoreText}>Loading more...</Text>
-                </View>
-              ) : pagination.hasMore ? (
-                <View style={styles.loadMoreHint}>
-                  <Text style={styles.loadMoreHintText}>Pull up to load more</Text>
-                </View>
-              ) : filteredTransactions.length > 10 ? (
-                <View style={styles.endOfList}>
-                  <Text style={styles.endOfListText}>No more transactions</Text>
-                </View>
-              ) : null
-            }
-          />
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyStateTitle}>No transactions found</Text>
-            <Text style={styles.emptyStateText}>
-              {searchQuery || filterType !== "all" || filterStatus !== "all"
-                ? "Try adjusting your search or filters"
-                : "Your transaction history will appear here"}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Summary */}
-      {filteredTransactions.length > 0 && (
-        <View style={styles.summary}>
-          <Text style={styles.summaryText}>
-            Showing {filteredTransactions.length} of {pagination.total}{" "}
-            transactions
-          </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0100e7" />
+          <Text style={styles.loadingText}>Loading transactions...</Text>
         </View>
+      ) : (
+        <>
+          {/* Transaction List Container */}
+          <View style={styles.transactionListContainer}>
+            {filteredTransactions.length > 0 ? (
+              <FlatList
+                data={filteredTransactions}
+                keyExtractor={(item, index) => `${item.id}`}
+                renderItem={renderTransactionItem}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.transactionsList}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={handleRefresh}
+                    colors={["#0100e7"]}
+                    tintColor="#0100e7"
+                  />
+                }
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={
+                  loadingMore ? (
+                    <View style={styles.loadingMoreContainer}>
+                      <ActivityIndicator size="small" color="#0100e7" />
+                      <Text style={styles.loadingMoreText}>
+                        Loading more...
+                      </Text>
+                    </View>
+                  ) : pagination.hasMore ? (
+                    <View style={styles.loadMoreHint}>
+                      <Text style={styles.loadMoreHintText}>
+                        Pull up to load more
+                      </Text>
+                    </View>
+                  ) : filteredTransactions.length > 10 ? (
+                    <View style={styles.endOfList}>
+                      <Text style={styles.endOfListText}>
+                        No more transactions
+                      </Text>
+                    </View>
+                  ) : null
+                }
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="receipt-outline" size={64} color="#ccc" />
+                <Text style={styles.emptyStateTitle}>
+                  No transactions found
+                </Text>
+                <Text style={styles.emptyStateText}>
+                  {searchQuery || filterType !== "all" || filterStatus !== "all"
+                    ? "Try adjusting your search or filters"
+                    : "Your transaction history will appear here"}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Summary */}
+          {filteredTransactions.length > 0 && (
+            <View style={styles.summary}>
+              <Text style={styles.summaryText}>
+                Showing {filteredTransactions.length} of {pagination.total}{" "}
+                transactions
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -342,7 +353,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
   },
   loadingContainer: {
-    flex: 1,
+    flex: 99999,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f8f9fa",
@@ -487,7 +498,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   transactionDetails: {
-    flex: 1,
+    flex: 2,
   },
   transactionDescription: {
     fontSize: 16,
@@ -546,6 +557,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666666",
     textAlign: "center",
+  },
+  transactionAmountView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
