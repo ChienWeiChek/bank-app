@@ -36,18 +36,15 @@ export async function errorMiddleware(
         status = 400;
         code = "INVALID_INPUT";
         message = "Invalid input data";
+      } else if (err.message.includes("Invalid token")) {
+        status = 401;
+        code = "INVALID_TOKEN";
+        message = "Invalid authentication token";
+      } else if (err.message.includes("Token expired")) {
+        status = 401;
+        code = "TOKEN_EXPIRED";
+        message = "Authentication token expired";
       }
-    }
-
-    // ---- JWT-specific errors ----
-    if (err.name === "JsonWebTokenError") {
-      status = 401;
-      code = "INVALID_TOKEN";
-      message = "Invalid authentication token";
-    } else if (err.name === "TokenExpiredError") {
-      status = 401;
-      code = "TOKEN_EXPIRED";
-      message = "Authentication token expired";
     }
 
     ctx.response.status = status;
