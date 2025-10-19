@@ -3,6 +3,8 @@ This is a demo project for a banking application.
 It includes:  
 - A **mobile app** built with **Expo (React Native)**  
 - A **backend** built with **Deno** and **PostgreSQL** powered by docker
+  
+⚠️ ⚠️ ⚠️  **This app required backend for running, please check the /backend/readme.md to setup backend**⚠️ ⚠️ ⚠️ 
 
 ## Get started
 
