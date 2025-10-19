@@ -4,7 +4,7 @@ import { useAuthStore } from "@/store/auth";
 import { Account } from "@/types";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   RefreshControl,
@@ -19,15 +19,18 @@ const DashboardScreen = () => {
   const { user } = useAuthStore();
   const {
     accounts,
-    selectedAccount,
-    setSelectedAccount,
+
     loading,
     fetchAccounts,
   } = useAccountsStore();
-  
+
   // Use SWR hook for recent transactions (limit to 5 for dashboard)
-  const { transactions, isLoading: transactionsLoading, refresh: refreshTransactions } = useTransactions();
-  
+  const {
+    transactions,
+    isLoading: transactionsLoading,
+    refresh: refreshTransactions,
+  } = useTransactions();
+  const [selectedAccount, setSelectedAccount] = useState<Account>();
   const router = useRouter();
 
   const totalBalance = accounts.reduce(

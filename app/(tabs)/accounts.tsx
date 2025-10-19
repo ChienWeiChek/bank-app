@@ -1,7 +1,7 @@
-import { useAccountsStore } from '@/store/account';
-import { Account } from '@/types';
-import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect } from 'react';
+import { useAccountsStore } from "@/store/account";
+import { Account } from "@/types";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -9,18 +9,12 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
-} from 'react-native';
+  View,
+} from "react-native";
 
 const AccountsScreen = () => {
-  const { 
-    accounts, 
-    selectedAccount, 
-    setSelectedAccount, 
-    fetchAccounts, 
-    loading, 
-    error 
-  } = useAccountsStore();
+  const { accounts, fetchAccounts, loading, error } = useAccountsStore();
+  const [selectedAccount, setSelectedAccount] = useState<Account>();
 
   useEffect(() => {
     fetchAccounts();
@@ -31,35 +25,35 @@ const AccountsScreen = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
   const getAccountIcon = (type: string) => {
     switch (type) {
-      case 'checking':
-        return { name: 'wallet-outline', color: '#0100e7' };
-      case 'savings':
-        return { name: 'cash-outline', color: '#28a745' };
-      case 'credit':
-        return { name: 'card-outline', color: '#dc3545' };
+      case "checking":
+        return { name: "wallet-outline", color: "#0100e7" };
+      case "savings":
+        return { name: "cash-outline", color: "#28a745" };
+      case "credit":
+        return { name: "card-outline", color: "#dc3545" };
       default:
-        return { name: 'help-circle-outline', color: '#6c757d' };
+        return { name: "help-circle-outline", color: "#6c757d" };
     }
   };
 
   const getAccountTypeLabel = (type: string) => {
     switch (type) {
-      case 'checking':
-        return 'Checking Account';
-      case 'savings':
-        return 'Savings Account';
-      case 'credit':
-        return 'Credit Card';
+      case "checking":
+        return "Checking Account";
+      case "savings":
+        return "Savings Account";
+      case "credit":
+        return "Credit Card";
       default:
-        return 'Account';
+        return "Account";
     }
   };
 
@@ -67,7 +61,10 @@ const AccountsScreen = () => {
     setSelectedAccount(account);
   };
 
-  const totalBalance = accounts.reduce((sum: number, account: Account) => sum + account.balance, 0);
+  const totalBalance = accounts.reduce(
+    (sum: number, account: Account) => sum + account.balance,
+    0
+  );
 
   // Loading state
   if (loading && accounts.length === 0) {
@@ -94,21 +91,23 @@ const AccountsScreen = () => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={loading && accounts.length > 0}
           onRefresh={handleRefresh}
-          colors={['#0100e7']}
+          colors={["#0100e7"]}
         />
       }
     >
       {/* Total Balance */}
       <View style={styles.totalBalanceCard}>
         <Text style={styles.totalBalanceLabel}>Total Balance</Text>
-        <Text style={styles.totalBalanceAmount}>{formatCurrency(totalBalance)}</Text>
+        <Text style={styles.totalBalanceAmount}>
+          {formatCurrency(totalBalance)}
+        </Text>
         <View style={styles.balanceTrend}>
           <Ionicons name="trending-up" size={16} color="#28a745" />
           <Text style={styles.trendText}>Overall account summary</Text>
@@ -123,7 +122,8 @@ const AccountsScreen = () => {
             <Ionicons name="wallet-outline" size={48} color="#6c757d" />
             <Text style={styles.emptyStateTitle}>No accounts found</Text>
             <Text style={styles.emptyStateMessage}>
-              You don&apos;t have any accounts yet. Add your first account to get started.
+              You don&apos;t have any accounts yet. Add your first account to
+              get started.
             </Text>
           </View>
         ) : (
@@ -131,7 +131,7 @@ const AccountsScreen = () => {
             {accounts.map((account: Account) => {
               const icon = getAccountIcon(account.type);
               const isSelected = selectedAccount?.id === account.id;
-              
+
               return (
                 <TouchableOpacity
                   key={account.id}
@@ -143,7 +143,11 @@ const AccountsScreen = () => {
                 >
                   <View style={styles.accountHeader}>
                     <View style={styles.accountIcon}>
-                      <Ionicons name={icon.name as any} size={24} color={icon.color} />
+                      <Ionicons
+                        name={icon.name as any}
+                        size={24}
+                        color={icon.color}
+                      />
                     </View>
                     <View style={styles.accountInfo}>
                       <Text style={styles.accountName}>{account.name}</Text>
@@ -153,14 +157,20 @@ const AccountsScreen = () => {
                     </View>
                     {isSelected && (
                       <View style={styles.selectedIndicator}>
-                        <Ionicons name="checkmark-circle" size={20} color="#0100e7" />
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color="#0100e7"
+                        />
                       </View>
                     )}
                   </View>
-                  
+
                   <View style={styles.accountDetails}>
                     <View style={styles.accountNumberContainer}>
-                      <Text style={styles.accountNumberLabel}>Account Number</Text>
+                      <Text style={styles.accountNumberLabel}>
+                        Account Number
+                      </Text>
                       <Text style={styles.accountNumber}>{account.number}</Text>
                     </View>
                     <Text style={styles.accountBalance}>
@@ -179,7 +189,11 @@ const AccountsScreen = () => {
                       <Text style={styles.actionText}>Deposit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="document-text" size={16} color="#6c757d" />
+                      <Ionicons
+                        name="document-text"
+                        size={16}
+                        color="#6c757d"
+                      />
                       <Text style={styles.actionText}>Details</Text>
                     </TouchableOpacity>
                   </View>
@@ -198,21 +212,30 @@ const AccountsScreen = () => {
             <View style={styles.summaryCard}>
               <Ionicons name="wallet-outline" size={24} color="#0100e7" />
               <Text style={styles.summaryAmount}>
-                {formatCurrency(accounts.find((acc: Account) => acc.type === 'checking')?.balance || 0)}
+                {formatCurrency(
+                  accounts.find((acc: Account) => acc.type === "checking")
+                    ?.balance || 0
+                )}
               </Text>
               <Text style={styles.summaryLabel}>Checking</Text>
             </View>
             <View style={styles.summaryCard}>
               <Ionicons name="cash-outline" size={24} color="#28a745" />
               <Text style={styles.summaryAmount}>
-                {formatCurrency(accounts.find((acc: Account) => acc.type === 'savings')?.balance || 0)}
+                {formatCurrency(
+                  accounts.find((acc: Account) => acc.type === "savings")
+                    ?.balance || 0
+                )}
               </Text>
               <Text style={styles.summaryLabel}>Savings</Text>
             </View>
             <View style={styles.summaryCard}>
               <Ionicons name="card-outline" size={24} color="#dc3545" />
               <Text style={styles.summaryAmount}>
-                {formatCurrency(accounts.find((acc: Account) => acc.type === 'credit')?.balance || 0)}
+                {formatCurrency(
+                  accounts.find((acc: Account) => acc.type === "credit")
+                    ?.balance || 0
+                )}
               </Text>
               <Text style={styles.summaryLabel}>Credit</Text>
             </View>
@@ -232,93 +255,93 @@ const AccountsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
     padding: 16,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666666',
+    color: "#666666",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
     padding: 32,
   },
   errorTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
     marginTop: 16,
     marginBottom: 8,
   },
   errorMessage: {
     fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#0100e7',
+    backgroundColor: "#0100e7",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 32,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
   },
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateMessage: {
     fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
+    color: "#666666",
+    textAlign: "center",
   },
   totalBalanceCard: {
-    backgroundColor: '#0100e7',
+    backgroundColor: "#0100e7",
     borderRadius: 16,
     padding: 24,
     marginBottom: 24,
   },
   totalBalanceLabel: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
     opacity: 0.9,
     marginBottom: 8,
   },
   totalBalanceAmount: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
   },
   balanceTrend: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   trendText: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 14,
     opacity: 0.9,
     marginLeft: 4,
@@ -328,36 +351,36 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
     marginBottom: 16,
   },
   accountsList: {
     gap: 16,
   },
   accountCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 20,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   accountCardSelected: {
-    borderColor: '#0100e7',
-    backgroundColor: '#f0f8ff',
+    borderColor: "#0100e7",
+    backgroundColor: "#f0f8ff",
   },
   accountHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   accountIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f0f8ff',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0f8ff",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   accountInfo: {
@@ -365,21 +388,21 @@ const styles = StyleSheet.create({
   },
   accountName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
     marginBottom: 4,
   },
   accountType: {
     fontSize: 14,
-    color: '#666666',
+    color: "#666666",
   },
   selectedIndicator: {
     padding: 4,
   },
   accountDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
     marginBottom: 16,
   },
   accountNumberContainer: {
@@ -387,76 +410,76 @@ const styles = StyleSheet.create({
   },
   accountNumberLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
     marginBottom: 4,
   },
   accountNumber: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
+    fontWeight: "600",
+    color: "#333333",
   },
   accountBalance: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
   },
   accountActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
     paddingTop: 16,
   },
   actionButton: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
   },
   actionText: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
     marginTop: 4,
   },
   summarySection: {
     marginBottom: 24,
   },
   summaryCards: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   summaryCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
     marginHorizontal: 4,
   },
   summaryAmount: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
+    fontWeight: "bold",
+    color: "#333333",
     marginTop: 8,
     marginBottom: 4,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666666',
+    color: "#666666",
   },
   addAccountButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
   },
   addAccountText: {
-    color: '#0100e7',
+    color: "#0100e7",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 8,
   },
 });

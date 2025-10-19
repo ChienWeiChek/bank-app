@@ -19,130 +19,108 @@ interface BalanceResponse {
 // Accounts Store
 interface AccountsState {
   accounts: Account[];
-  selectedAccount: Account | null;
   loading: boolean;
   error: string | null;
 
   // Actions
-  setSelectedAccount: (account: Account) => void;
-  updateAccountBalance: (accountId: string, newBalance: number) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  
+
   // API Actions
   fetchAccounts: () => Promise<void>;
   fetchAccountDetails: (accountId: string) => Promise<void>;
   fetchAccountBalance: (accountId: string) => Promise<number | null>;
+  refreshAccountBalance: (accountId: string) => Promise<number | null>;
 }
 
 export const useAccountsStore = create<AccountsState>()((set, get) => ({
   accounts: [],
-  selectedAccount: null,
   loading: false,
   error: null,
 
-  setSelectedAccount: (selectedAccount: Account) => set({ selectedAccount }),
+  setLoading: (loading) => set({ loading }),
 
-  updateAccountBalance: (accountId: string, newBalance: number) => {
-    const { accounts, selectedAccount } = get();
-
-    const updatedAccounts = accounts.map((account) =>
-      account.id === accountId ? { ...account, balance: newBalance } : account
-    );
-
-    const updatedSelectedAccount =
-      selectedAccount?.id === accountId
-        ? { ...selectedAccount, balance: newBalance }
-        : selectedAccount;
-
-    set({
-      accounts: updatedAccounts,
-      selectedAccount: updatedSelectedAccount,
-    });
-  },
-
-  setLoading: (loading: boolean) => set({ loading }),
-
-  setError: (error: string | null) => set({ error }),
+  setError: (error) => set({ error }),
 
   // API Actions
   fetchAccounts: async () => {
     set({ loading: true, error: null });
-    
+
     try {
-      const response = await apiService.request<AccountsResponse>("/api/accounts");
-      
+      const response = await apiService.request<AccountsResponse>(
+        "/api/accounts"
+      );
+
       if (response.success && response.data) {
-        set({ 
+        set({
           accounts: response.data.accounts,
-          loading: false 
+          loading: false,
         });
       } else {
-        set({ 
+        set({
           error: response.error || "Failed to fetch accounts",
-          loading: false 
+          loading: false,
         });
       }
     } catch (error) {
       console.error("Error fetching accounts:", error);
-      set({ 
+      set({
         error: "Network error. Please check your connection.",
-        loading: false 
+        loading: false,
       });
     }
   },
 
-  fetchAccountDetails: async (accountId: string) => {
+  fetchAccountDetails: async (accountId) => {
     set({ loading: true, error: null });
-    
+
     try {
-      const response = await apiService.request<AccountResponse>(`/api/accounts/${accountId}`);
-      
+      const response = await apiService.request<AccountResponse>(
+        `/api/accounts/${accountId}`
+      );
+
       if (response.success && response.data) {
         const { accounts } = get();
-        const updatedAccounts = accounts.map(account => 
+        const updatedAccounts = accounts.map((account) =>
           account.id === accountId ? response.data!.account : account
         );
-        
-        set({ 
+
+        set({
           accounts: updatedAccounts,
-          selectedAccount: response.data.account,
-          loading: false 
+          loading: false,
         });
       } else {
-        set({ 
+        set({
           error: response.error || "Failed to fetch account details",
-          loading: false 
+          loading: false,
         });
       }
     } catch (error) {
       console.error("Error fetching account details:", error);
-      set({ 
+      set({
         error: "Network error. Please check your connection.",
-        loading: false 
+        loading: false,
       });
     }
   },
 
-  fetchAccountBalance: async (accountId: string): Promise<number | null> => {
+  fetchAccountBalance: async (accountId) => {
     try {
-      const response = await apiService.request<BalanceResponse>(`/api/accounts/${accountId}/balance`);
-      
-      if (response.success && response.data) {
-        const { accounts, selectedAccount } = get();
-        
-        const updatedAccounts = accounts.map(account =>
-          account.id === accountId ? { ...account, balance: response.data!.balance } : account
-        );
+      const response = await apiService.request<BalanceResponse>(
+        `/api/accounts/${accountId}/balance`
+      );
 
-        const updatedSelectedAccount =
-          selectedAccount?.id === accountId
-            ? { ...selectedAccount, balance: response.data!.balance }
-            : selectedAccount;
+      if (response.success && response.data) {
+        const { accounts } = get();
+
+        const updatedAccounts = accounts.map((account) =>
+          account.id === accountId
+            ? { ...account, balance: response.data!.balance }
+            : account
+        );
 
         set({
           accounts: updatedAccounts,
-          selectedAccount: updatedSelectedAccount,
         });
 
         return response.data.balance;
@@ -154,6 +132,19 @@ export const useAccountsStore = create<AccountsState>()((set, get) => ({
       console.error("Error fetching account balance:", error);
       set({ error: "Network error. Please check your connection." });
       return null;
+    }
+  },
+
+  // Refresh account balance after transfer to ensure data consistency
+  refreshAccountBalance: async (accountId) => {
+    try {
+      const data = await get().fetchAccountBalance(accountId);
+      console.log("🚀 ~ data:", data);
+      return data;
+    } catch (error) {
+      console.error("Error refreshing account balance:", error);
+      return null;
+      // Silently fail - the local state is already updated, this is just for synchronization
     }
   },
 }));

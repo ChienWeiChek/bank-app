@@ -3,6 +3,7 @@ import { useAccountsStore } from "@/store/account";
 import { Account, Contact, Recipient } from "@/types";
 import { BiometricAuth } from "@/utils/biometricAuth";
 import { ContactService } from "@/utils/contacts";
+import { TransferHistoryService } from "@/utils/transferHistory";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -22,16 +23,13 @@ type TransferMethod = "bank" | "duitnow";
 
 const TransferScreen = () => {
   const router = useRouter();
-  const { accounts, selectedAccount, updateAccountBalance } =
-    useAccountsStore();
+  const { accounts, refreshAccountBalance } = useAccountsStore();
 
   const [amount, setAmount] = useState("");
   const [recipient, setRecipient] = useState<Recipient | null>();
   const [recipientAccountNumber, setRecipientAccountNumber] = useState("");
   const [note, setNote] = useState("");
-  const [fromAccount, setFromAccount] = useState<Account | null>(
-    selectedAccount || accounts[0]
-  );
+  const [fromAccount, setFromAccount] = useState<Account>(accounts[0]);
   const [transferMethod, setTransferMethod] =
     useState<TransferMethod>("duitnow");
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -41,6 +39,9 @@ const TransferScreen = () => {
   const [contactsLoading, setContactsLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState("");
+  const [lastTransferAmounts, setLastTransferAmounts] = useState<
+    Record<string, number>
+  >({});
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -54,6 +55,20 @@ const TransferScreen = () => {
     // Basic validation: numbers only, 8-20 characters
     const accountNumberRegex = /^\d{8,20}$/;
     return accountNumberRegex.test(accountNumber);
+  };
+
+  // Load last transfer amounts for contacts
+  const loadLastTransferAmounts = async () => {
+    try {
+      const history = await TransferHistoryService.getTransferHistory();
+      const amounts: Record<string, number> = {};
+      history.forEach((item) => {
+        amounts[item.contactId] = item.lastAmount;
+      });
+      setLastTransferAmounts(amounts);
+    } catch (error) {
+      console.error("Error loading last transfer amounts:", error);
+    }
   };
 
   const handleTransfer = async () => {
@@ -189,11 +204,21 @@ const TransferScreen = () => {
       );
 
       if (response.success && response.data) {
-        // Update local account balance
-        updateAccountBalance(
-          fromAccount!.id,
-          fromAccount!.balance - transferAmount
-        );
+        // Refresh account balance from backend to ensure data consistency
+        const data = await refreshAccountBalance(fromAccount!.id);
+        if (data) setFromAccount((prev) => ({ ...prev, balance: data }));
+
+        // Save transfer history if recipient is from contacts
+        if (transferMethod === "duitnow" && recipient && "id" in recipient) {
+          const contact = recipient as Contact;
+          await TransferHistoryService.saveLastTransfer(
+            contact.id,
+            contact.name,
+            contact.phoneNumber,
+            transferAmount
+          );
+          await loadLastTransferAmounts(); // Refresh the amounts
+        }
 
         // Navigate to success screen
         router.push({
@@ -251,6 +276,12 @@ const TransferScreen = () => {
   const selectContact = (contact: Contact) => {
     setRecipient(contact);
     setShowContactsModal(false);
+
+    // Auto-fill amount if this contact has a last transfer amount
+    const lastAmount = lastTransferAmounts[contact.id];
+    if (lastAmount) {
+      setAmount(lastAmount.toString());
+    }
   };
 
   const selectAccount = (account: Account) => {
@@ -263,6 +294,7 @@ const TransferScreen = () => {
     try {
       const deviceContacts = await ContactService.getContacts();
       setContacts(deviceContacts);
+      await loadLastTransferAmounts(); // Load last transfer amounts when contacts are loaded
     } catch (error) {
       console.error("Failed to load contacts:", error);
     } finally {
@@ -493,6 +525,12 @@ const TransferScreen = () => {
                   <View style={styles.contactInfo}>
                     <Text style={styles.contactName}>{item.name}</Text>
                     <Text style={styles.contactPhone}>{item.phoneNumber}</Text>
+                    {lastTransferAmounts[item.id] && (
+                      <Text style={styles.lastTransferText}>
+                        Last transfer:{" "}
+                        {formatCurrency(lastTransferAmounts[item.id])}
+                      </Text>
+                    )}
                     {item.email && (
                       <Text style={styles.contactEmail}>{item.email}</Text>
                     )}
@@ -834,6 +872,12 @@ const styles = StyleSheet.create({
   contactPhone: {
     fontSize: 14,
     color: "#666666",
+  },
+  lastTransferText: {
+    fontSize: 12,
+    color: "#28a745",
+    fontWeight: "500",
+    marginTop: 2,
   },
   contactEmail: {
     fontSize: 12,
