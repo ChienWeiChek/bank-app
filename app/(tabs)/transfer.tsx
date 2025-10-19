@@ -310,6 +310,35 @@ const TransferScreen = () => {
 
   const quickAmounts = [10, 50, 100, 200, 500];
 
+  // Comprehensive form validation
+  const isFormValid = (): boolean => {
+    const transferAmount = parseFloat(amount);
+    
+    // Check required fields
+    if (!fromAccount) return false;
+    if (transferMethod === "bank" && !recipientAccountNumber) return false;
+    if (transferMethod === "duitnow" && !recipient) return false;
+    if (!amount || transferAmount <= 0) return false;
+    
+    // Check account number format for bank transfers
+    if (transferMethod === "bank" && !validateAccountNumber(recipientAccountNumber)) {
+      return false;
+    }
+    
+    // Check sufficient funds
+    if (transferAmount > fromAccount.balance) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Check if amount exceeds balance
+  const isAmountExceedingBalance = (): boolean => {
+    const transferAmount = parseFloat(amount);
+    return fromAccount && transferAmount > fromAccount.balance;
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* From Account */}
@@ -456,19 +485,24 @@ const TransferScreen = () => {
         />
       </View>
 
+      {/* Insufficient Funds Warning */}
+      {isAmountExceedingBalance() && (
+        <View style={styles.warningContainer}>
+          <Ionicons name="warning" size={20} color="#dc3545" />
+          <Text style={styles.warningText}>
+            Amount exceeds available balance
+          </Text>
+        </View>
+      )}
+
       {/* Transfer Button */}
       <TouchableOpacity
         style={[
           styles.transferButton,
-          loading && styles.transferButtonDisabled,
+          (!isFormValid() || loading) && styles.transferButtonDisabled,
         ]}
         onPress={handleTransfer}
-        disabled={
-          loading ||
-          !amount ||
-          !fromAccount ||
-          (transferMethod === "bank" ? !recipientAccountNumber : !recipient)
-        }
+        disabled={!isFormValid() || loading}
       >
         <Text style={styles.transferButtonText}>
           {loading ? "Processing..." : "Transfer Money"}
@@ -790,6 +824,23 @@ const styles = StyleSheet.create({
   securityText: {
     color: "#666666",
     fontSize: 14,
+    marginLeft: 8,
+  },
+  warningContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffe6e6",
+    borderWidth: 1,
+    borderColor: "#dc3545",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  warningText: {
+    color: "#dc3545",
+    fontSize: 14,
+    fontWeight: "500",
     marginLeft: 8,
   },
   modalContainer: {
