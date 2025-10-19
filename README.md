@@ -43,7 +43,7 @@ You can start developing by editing the files inside the **app** directory. This
 ### ✅ Completed Features
 
 **Authentication & Security**
-- User registration and login
+- User login
 - Biometric authentication setup (Face ID / Touch ID / Fingerprint)
 - Biometric authentication for payment transfers
 - Password fallback for devices without biometric capabilities
