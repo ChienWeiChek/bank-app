@@ -38,21 +38,10 @@ CREATE TABLE IF NOT EXISTS transactions (
   date TIMESTAMP DEFAULT NOW(),
   status VARCHAR(20) CHECK (status IN ('completed', 'pending', 'failed')) NOT NULL,
   from_account_id UUID REFERENCES accounts(id),
-  to_account_id UUID REFERENCES accounts(id),
+  to_account_id VARCHAR(255),
   recipient_name VARCHAR(255),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  user_id VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Contacts table
-CREATE TABLE IF NOT EXISTS contacts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  name VARCHAR(255) NOT NULL,
-  phone_number VARCHAR(20) NOT NULL,
-  email VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Create indexes for better performance
@@ -60,7 +49,6 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
-CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
 
 -- Insert sample data for development
 -- Sample user (password: SecurePassword123!)
@@ -95,12 +83,6 @@ INSERT INTO accounts (id, user_id, type, name, number, balance, currency) VALUES
 ('a4000000-0000-0000-0000-000000000002', '88880000-0000-0000-0000-000000000003', 'credit',   'David Credit Line', '****4401', -500.00, 'USD')
 ON CONFLICT (id) DO NOTHING;
 
--- Sample contacts
-INSERT INTO contacts (id, user_id, name, phone_number, email) VALUES
-('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'John Doe', '+1234567890', 'john.doe@email.com'),
-('66666666-6666-6666-6666-666666666666', '11111111-1111-1111-1111-111111111111', 'Jane Smith', '+0987654321', 'jane.smith@email.com'),
-('77777777-7777-7777-7777-777777777777', '11111111-1111-1111-1111-111111111111', 'Bob Johnson', '+1122334455', NULL)
-ON CONFLICT (id) DO NOTHING;
 
 -- Sample transactions
 INSERT INTO transactions (id, type, amount, description, date, status, from_account_id, to_account_id, recipient_name, user_id) VALUES
