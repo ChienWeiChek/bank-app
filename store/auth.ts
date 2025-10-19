@@ -15,7 +15,10 @@ interface AuthState {
 
   // Actions
   loginStart: () => void;
-  loginSuccess: (user: User, tokens: { accessToken: string; refreshToken: string }) => void;
+  loginSuccess: (
+    user: User,
+    tokens: { accessToken: string; refreshToken: string }
+  ) => void;
   loginFailure: (error: string) => void;
   logout: () => void;
   setBiometricEnabled: (enabled: boolean) => void;
@@ -36,7 +39,10 @@ export const useAuthStore = create<AuthState>()(
 
       loginStart: () => set({ loading: true, error: null }),
 
-      loginSuccess: (user: User, tokens: { accessToken: string; refreshToken: string }) =>
+      loginSuccess: (
+        user: User,
+        tokens: { accessToken: string; refreshToken: string }
+      ) =>
         set({
           loading: false,
           user,

@@ -18,13 +18,16 @@ export interface Account {
   currency: string;
 }
 
-export interface Contact {
-  id: string;
-  name: string;
+export interface Recipient {
+  name?: string;
   phoneNumber: string;
   email?: string;
 }
 
+export interface Contact extends Recipient {
+  id: string;
+  name: string;
+}
 export interface Transaction {
   id: string;
   type: "transfer" | "payment" | "deposit" | "withdrawal";

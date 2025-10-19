@@ -29,7 +29,6 @@ accountsRouter.get(
       balance: parseFloat(account.balance),
       currency: account.currency,
     }));
-    console.log("🚀 ~ accounts:", accounts);
 
     ctx.response.body = { accounts };
   })
