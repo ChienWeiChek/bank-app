@@ -1,7 +1,7 @@
 // API service for handling HTTP requests
 import { useAuthStore } from "@/store/auth";
 
-const API_BASE_URL = "http://10.0.2.2:8000";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:8000";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -62,7 +62,7 @@ class ApiService {
           const { logout } = useAuthStore.getState();
           console.log("log user out");
           logout();
-          
+
           // Trigger navigation callback if set
           if (this.navigationCallback) {
             this.navigationCallback();
