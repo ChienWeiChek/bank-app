@@ -38,6 +38,21 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+
+## DEMO Video
+
+Demo videos showcasing the app features can be found in the `demo/` directory:
+
+- `biometric_login.mp4` - Biometric authentication for login
+- `contact_list_transfer.mp4` - Transfer using contact list
+- `first_login.mp4` - Initial login process
+- `history_list_infinite_scroll.mp4` - Transaction history with infinite scroll
+- `history_list_switch_tab.mp4` - Switching between history tabs
+- `password_transfer.mp4` - Password-based transfer authentication
+- `save_last_transfer_in_contact.mp4` - Saving last transfer amounts per contact
+- `setup_biometric.mp4` - Biometric authentication setup
+- `view_demo.mp4` - General app overview and features
+
 ## Feature List
 
 ### ✅ Completed Features
