@@ -4,7 +4,7 @@ It includes:
 - A **mobile app** built with **Expo (React Native)**  
 - A **backend** built with **Deno** and **PostgreSQL** powered by docker
   
-⚠️ ⚠️ ⚠️  **This app required backend for running, please check the /backend/readme.md to setup backend**⚠️ ⚠️ ⚠️ 
+⚠️⚠️**This app required backend for running, please check the /backend/readme.md to setup backend** ⚠️⚠️
 
 ## Get started
 
@@ -38,20 +38,45 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-
 ## DEMO Video
 
 Demo videos showcasing the app features can be found in the `demo/` directory:
+ 
+- `first_login.mp4` - Initial login process
+
+https://github.com/user-attachments/assets/5fe81c98-ce17-4cc8-a3e6-e3621de51425
+
+- `view_demo.mp4` - General app overview and features
+
+https://github.com/user-attachments/assets/81ee8a86-1a56-4837-ac9e-818dc3baa44e
 
 - `biometric_login.mp4` - Biometric authentication for login
-- `contact_list_transfer.mp4` - Transfer using contact list
-- `first_login.mp4` - Initial login process
-- `history_list_infinite_scroll.mp4` - Transaction history with infinite scroll
-- `history_list_switch_tab.mp4` - Switching between history tabs
-- `password_transfer.mp4` - Password-based transfer authentication
-- `save_last_transfer_in_contact.mp4` - Saving last transfer amounts per contact
+
+https://github.com/user-attachments/assets/cb0fabcb-5f73-465c-b506-8f93bb461441
+
 - `setup_biometric.mp4` - Biometric authentication setup
-- `view_demo.mp4` - General app overview and features
+
+https://github.com/user-attachments/assets/06475014-a932-43a9-82b4-769867e97daa
+
+- `contact_list_transfer.mp4` - Transfer using contact list
+
+https://github.com/user-attachments/assets/e6b4f6b3-0f5c-435e-84e2-4d648e2ae147
+
+- `password_transfer.mp4` - Password-based transfer authentication
+
+https://github.com/user-attachments/assets/e26b7358-1ff0-4de2-ae3a-ef5ebde12e05
+
+- `save_last_transfer_in_contact.mp4` - Saving last transfer amounts per contact
+  
+https://github.com/user-attachments/assets/9b8ab0f7-8e15-4882-8694-da50f46b80db
+
+- `history_list_infinite_scroll.mp4` - Transaction history with infinite scroll
+
+https://github.com/user-attachments/assets/9d79335a-43a0-40e2-8a3d-f14e803378f8
+  
+- `history_list_switch_tab.mp4` - Switching between history tabs
+
+https://github.com/user-attachments/assets/02b0d5b8-b7f5-42ad-9e4f-ae43bb85760d
 
 ## Feature List
 
