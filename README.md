@@ -78,6 +78,10 @@ You can start developing by editing the files inside the **app** directory. This
 
 ### 🔄 In Progress / Todo Features
 
+**User Features**
+- User Registration
+- Account creation
+
 **Enhanced Features**
 - Push notifications for transactions
 - Multi-currency support

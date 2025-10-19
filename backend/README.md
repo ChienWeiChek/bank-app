@@ -27,6 +27,11 @@ A Deno.js banking API designed to serve as the backend for a React Native mobile
    - API: http://localhost:8000
    - PostgreSQL: localhost:5432
 
+4. **Add more transaction history dummy data**(optional)
+   run the file on /docker/dummy-data.sql on postgreql
+   ```bash
+      docker exec -it bank-app-api-db-1 psql -U user -d bank_app -f /dummy-data.sql
+   ```
 ### Development Commands
 
 ```bash
@@ -49,6 +54,7 @@ docker-compose down
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh access token
+- `GET /api/auth/me` - Get current user
 
 ### Accounts
 - `GET /api/accounts` - Get user accounts
@@ -58,9 +64,6 @@ docker-compose down
 - `POST /api/transactions/transfer` - Transfer money
 - `GET /api/transactions/history` - Get transaction history
 
-### Contacts
-- `GET /api/contacts` - Get user contacts
-- `POST /api/contacts` - Add new contact
 
 ## Sample Data
 
@@ -68,7 +71,7 @@ The database comes pre-loaded with sample data for testing:
 
 **Demo User:**
 - Email: `demo@bankapp.com`
-- Password: `password123`
+- Password: `SecurePassword123!`
 
 **Sample Accounts:**
 - Main Checking: $12,500.75
