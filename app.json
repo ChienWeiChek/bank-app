@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile-app",
-    "slug": "mobile-app",
+    "name": "bank-app",
+    "slug": "bank-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobileapp",
+    "scheme": "bankapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

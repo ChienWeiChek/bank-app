@@ -1,6 +1,8 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Welcome to Bank App(WIP)👋
+This is a demo project for a banking application.  
+It includes:  
+- A **mobile app** built with **Expo (React Native)**  
+- A **backend** built with **Deno** and **PostgreSQL** powered by docker
 
 ## Get started
 
@@ -10,10 +12,19 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. clone .env.example to .env and update it(if needed)
+```bash
+cp .env.example .env
+```
+
+3. Start the app
 
    ```bash
    npx expo start
+
+   or 
+
+   npm run android
    ```
 
 In the output, you'll find options to open the app in a
@@ -25,26 +36,62 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-## Get a fresh project
+## Feature List
 
-When you're ready, run:
+### ✅ Completed Features
 
-```bash
-npm run reset-project
-```
+**Authentication & Security**
+- User registration and login
+- Biometric authentication setup (Face ID / Touch ID / Fingerprint)
+- Biometric authentication for payment transfers
+- Password fallback for devices without biometric capabilities
+- JWT token-based authentication
+- Secure token storage
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+**Account Management**
+- Account overview and balance display
+- Multiple account support
+- Account selection for transfers
+- Real-time balance updates after transfers
 
-## Learn more
+**Payment Transfer System**
+- User-friendly transfer interface
+- Recipient selection via contacts or manual input
+- Amount input with quick selection options
+- Optional transfer notes
+- Balance validation and insufficient funds handling
+- Transfer via DuitNow or bank account
+- Transaction processing with API simulation
+- Transfer confirmation screens
+- Error handling for various scenarios
 
-To learn more about developing your project with Expo, look at the following resources:
+**Contact Integration**
+- Access to device contact list
+- Contact selection for quick transfers
+- Recent transfer history per contact
+- Auto-fill amounts from previous transfers
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+**Transaction History**
+- Transaction listing and filtering
+- Transfer status tracking
+- Transaction details display
 
-## Join the community
+### 🔄 In Progress / Todo Features
 
-Join our community of developers creating universal apps.
+**Enhanced Features**
+- Push notifications for transactions
+- Multi-currency support
+- Scheduled/recurring transfers
+- Transfer templates for frequent recipients
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**UI/UX Improvements**
+- Dark mode support
+- Enhanced accessibility features
+- Improved error handling and user feedback
+- Loading states and animations
+
+**Testing & Quality**
+- Unit and integration tests
+- End-to-end testing
+- Performance testing
+- Security audit and penetration testing
