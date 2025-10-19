@@ -25,7 +25,7 @@ export async function authMiddleware(ctx: AuthenticatedContext, next: () => Prom
     ctx.state.user = payload;
     await next();
   } catch (error) {
-    throw Errors.UNAUTHORIZED;
+    throw error
   }
 }
 
